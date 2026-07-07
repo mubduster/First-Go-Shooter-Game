@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	rl "github.com/gen2brain/raylib-go/raylib"
 
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 type screen struct {
@@ -42,13 +42,22 @@ type mapColl struct {
 	onPlatform bool
 }
 var MapColl mapColl
+
 var isGrounded bool
 var hasJumped bool
 var isCrouched bool = false
 var oldHeight float32
+
 var Platforms []Platform
 var colorOneWay rl.Color = rl.GetColor(0x444444ff)
 var colorSolid rl.Color = rl.GetColor(0x000000ff)
+
+var earliestTime float32 = 1.0
+var collisionNormal rl.Vector2 
+var hitAny bool
+var ignoredPlatformIndex int = -1
+var ignoreCooldown float32 
+var hitPlatformIndex int = -1
 
 func main() {
 	rl.SetConfigFlags(rl.FlagWindowResizable | rl.FlagWindowMaximized)
@@ -78,6 +87,13 @@ func main() {
 	for !rl.WindowShouldClose(){
 
 		dT := rl.GetFrameTime()
+
+		if ignoreCooldown > 0 {  // OneWay playform collision ignore timer countdown
+			ignoreCooldown -= dT
+			if ignoreCooldown <= 0 {
+				ignoredPlatformIndex = -1  // resets OneWay collision
+			}
+		}
 		
 		oldHeight = Bean.Height
 		if rl.IsKeyDown(rl.KeyS) || rl.IsKeyDown(rl.KeyDown) {
@@ -124,8 +140,89 @@ func main() {
 			Bean.Speed.X -= Bean.Acceleration * dT
 		}
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+		// Map Collisions ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+		player := rl.NewRectangle(Bean.Pos.X, Bean.Pos.Y + (Bean.Radius*2), Bean.Width, Bean.Height)
+		earliestTime = float32(1.0)
+		collisionNormal = rl.NewVector2(0,0)
+		hitAny = false
+		hitPlatformIndex = -1
+		for i, p := range Platforms{
+
+			if i == ignoredPlatformIndex {
+				continue
+			}
+
+			if p.OneWay {  // Skip collision check for OneWay platform when jumping from below
+				if Bean.Speed.Y < 0 || isCrouched {
+					continue
+				} 
+			}
+
+			Time, Normal := Swetp_AABB(player, p.Rect, Bean.Speed)
+			if Time < earliestTime {
+				earliestTime = Time
+				collisionNormal = Normal
+				hitAny = true	
+			}
+		}
+		// MapColl.onPlatform = false
+		// for _, p := range Platforms{
+		// 	feetY := Bean.Pos.Y + Bean.Height
+		// 	headY := Bean.Pos.Y + (Bean.Radius*2)
 		
-		if MapColl.Floor || MapColl.onPlatform {
+		// 	if p.OneWay && !isCrouched && feetY >= p.Rect.Y && feetY < p.Rect.Y + p.Rect.Height && Bean.Pos.X < p.Rect.X + p.Rect.Width && Bean.Pos.X + Bean.Width > p.Rect.X { // top collision for OneWay platform
+		// 		Bean.Pos.Y = p.Rect.Y - Bean.Height 
+		// 		Bean.Speed.Y = 0.0
+		// 		MapColl.onPlatform = true
+		// 		break
+		// 	}
+		
+		// 	if !p.OneWay{
+		// 		if feetY >= p.Rect.Y && feetY < p.Rect.Y + p.Rect.Height && Bean.Pos.X < p.Rect.X + p.Rect.Width && Bean.Pos.X + Bean.Width > p.Rect.X { // top collision
+		// 			Bean.Pos.Y = p.Rect.Y - Bean.Height  
+		// 			Bean.Speed.Y = 0.0 
+		// 			MapColl.onPlatform = true 
+		// 			break 
+		// 		}
+		// 		if Bean.Speed.Y < 0  && headY <= p.Rect.Y  && headY > p.Rect.Y - p.Rect.Height - 10  &&  Bean.Pos.X < p.Rect.X + p.Rect.Width && Bean.Pos.X + Bean.Width > p.Rect.X { //bottom collision 
+		// 			Bean.Pos.Y = p.Rect.Y + (Bean.Radius * 2)
+		// 			Bean.Speed.Y = -1.0
+		// 			break	 
+		// 		}
+		// 		if rl.CheckCollisionPointRec(rl.NewVector2(p.Rect.X + p.Rect.Width + 1, p.Rect.Y + (p.Rect.Height/2)), rl.NewRectangle(Bean.Pos.X, Bean.Pos.Y, Bean.Width, Bean.Height)) {// right side collision 
+		// 			Bean.Pos.X = p.Rect.X + p.Rect.Width + 1  
+		// 			Bean.Speed.X = 0.0 
+		// 		}
+		// 		if rl.CheckCollisionPointRec(rl.NewVector2(p.Rect.X - 10, p.Rect.Y + (p.Rect.Height/2)), rl.NewRectangle(Bean.Pos.X, Bean.Pos.Y, Bean.Width, Bean.Height)){ //left side collision 
+		// 			Bean.Pos.X =  p.Rect.X - Bean.Width
+		// 			Bean.Speed.X = 0.0
+		// 		}
+		// 	}
+		// }
+		if Bean.Pos.Y + Bean.Height > Map.Border.Height - 50 { // Map Collision for floor
+			Bean.Pos.Y = Map.Border.Height - Bean.Height - 35
+			Bean.Speed.Y = 0.0
+			MapColl.Floor = true
+			}else if Bean.Pos.Y + Bean.Height < Map.Border.Height - 200 {
+			MapColl.Floor = false
+		}
+		if Bean.Pos.Y + (Bean.Radius * 2) < Map.Border.Y + 50 {
+			Bean.Pos.Y = (Bean.Radius*2) + Bean.Height + 35
+		}
+		if Bean.Pos.X  < Map.Border.X + 50 {
+			Bean.Speed.X = 0.0
+			Bean.Pos.X = Map.Border.X + Bean.Width + 10
+		}else if Bean.Pos.X + Bean.Width > Map.Border.Width - 50 {
+			Bean.Speed.X = 0.0
+			Bean.Pos.X = Map.Border.Width - Bean.Width - 40
+		}
+		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
+
+		if isGrounded && hitPlatformIndex != -1
+		
+		if MapColl.Floor || hitAny{
 			isGrounded = true
 		}else {
 			isGrounded = false
@@ -136,7 +233,7 @@ func main() {
 		
 		
 		// Gravity -----------------------------------------------------------------------------------------------------------------------------------------------------------------
-		if MapColl.Floor || MapColl.onPlatform {
+		if MapColl.Floor || isGrounded {
 			Gravity.Bean = 0
 		}else {
 			if Gravity.Bean < Gravity.Max && Bean.Speed.Y < Gravity.Max{
@@ -147,67 +244,6 @@ func main() {
 			}
 		}
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-			
-			
-		Bean.Pos.X += Bean.Speed.X * dT
-		Bean.Pos.Y += Bean.Speed.Y * dT
-
-		// Map Collisions ----------------------------------------------------------------------------------------------------------------------------------------------------------
-			MapColl.onPlatform = false
-			for _, p := range Platforms{
-				feetY := Bean.Pos.Y + Bean.Height
-				headY := Bean.Pos.Y + (Bean.Radius*2)
-			
-				if p.OneWay && !isCrouched && feetY >= p.Rect.Y && feetY < p.Rect.Y + p.Rect.Height && Bean.Pos.X < p.Rect.X + p.Rect.Width && Bean.Pos.X + Bean.Width > p.Rect.X { // top collision for OneWay platform
-					Bean.Pos.Y = p.Rect.Y - Bean.Height 
-					Bean.Speed.Y = 0.0
-					MapColl.onPlatform = true
-					break
-				}
-			
-				if !p.OneWay{
-					if feetY >= p.Rect.Y && feetY < p.Rect.Y + p.Rect.Height && Bean.Pos.X < p.Rect.X + p.Rect.Width && Bean.Pos.X + Bean.Width > p.Rect.X { // top collision
-						Bean.Pos.Y = p.Rect.Y - Bean.Height  
-						Bean.Speed.Y = 0.0 
-						MapColl.onPlatform = true 
-						break 
-					}
-					if Bean.Speed.Y < 0  && headY <= p.Rect.Y  && headY > p.Rect.Y - p.Rect.Height - 10  &&  Bean.Pos.X < p.Rect.X + p.Rect.Width && Bean.Pos.X + Bean.Width > p.Rect.X { //bottom collision 
-						Bean.Pos.Y = p.Rect.Y + (Bean.Radius * 2)
-						Bean.Speed.Y = -1.0
-						break	 
-					}
-					if rl.CheckCollisionPointRec(rl.NewVector2(p.Rect.X + p.Rect.Width + 1, p.Rect.Y + (p.Rect.Height/2)), rl.NewRectangle(Bean.Pos.X, Bean.Pos.Y, Bean.Width, Bean.Height)) {// right side collision 
-						Bean.Pos.X = p.Rect.X + p.Rect.Width + 1  
-						Bean.Speed.X = 0.0 
-					}
-					if rl.CheckCollisionPointRec(rl.NewVector2(p.Rect.X - 10, p.Rect.Y + (p.Rect.Height/2)), rl.NewRectangle(Bean.Pos.X, Bean.Pos.Y, Bean.Width, Bean.Height)){ //left side collision 
-						Bean.Pos.X =  p.Rect.X - Bean.Width
-						Bean.Speed.X = 0.0
-					}
-				}
-
-			}
-
-			if Bean.Pos.Y + Bean.Height > Map.Border.Height - 50 { // Map Collision for floor
-				Bean.Pos.Y = Map.Border.Height - Bean.Height - 35
-				Bean.Speed.Y = 0.0
-				MapColl.Floor = true
-				}else if Bean.Pos.Y + Bean.Height < Map.Border.Height - 200 {
-				MapColl.Floor = false
-			}
-			if Bean.Pos.Y + (Bean.Radius * 2) < Map.Border.Y + 50 {
-				Bean.Pos.Y = (Bean.Radius*2) + Bean.Height + 35
-			}
-			if Bean.Pos.X  < Map.Border.X + 50 {
-				Bean.Speed.X = 0.0
-				Bean.Pos.X = Map.Border.X + Bean.Width + 10
-			}else if Bean.Pos.X + Bean.Width > Map.Border.Width - 50 {
-				Bean.Speed.X = 0.0
-				Bean.Pos.X = Map.Border.Width - Bean.Width - 40
-			}
-
-			//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
 
 
 
