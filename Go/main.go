@@ -149,6 +149,13 @@ func main() {
 		}else if (rl.IsKeyDown(rl.KeyA) || rl.IsKeyDown(rl.KeyLeft)) && -Bean.Speed.X < Bean.MaxSpeed {
 			Bean.Speed.X -= Bean.Acceleration 
 		}
+
+		if Bean.Speed.X > Bean.MaxSpeed {
+			Bean.Speed.X = Bean.MaxSpeed
+		}
+		if Bean.Speed.Y > Bean.MaxSpeed {
+			Bean.Speed.Y = Bean.MaxSpeed
+		}
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 		
@@ -213,20 +220,22 @@ func main() {
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
 		
 		// if Bean.isGrounded && hitPlatformIndex != -1 && Platforms[hitPlatformIndex].OneWay {
-			// 	if Bean.isCrouched {  // block collision for 0.25 seconds
-			// 		Bean.ignoredPlatformIndex = hitPlatformIndex
-			// 		Bean.ignoredCooldown = 0.25
-			// 		Bean.isGrounded = false
-			// 		hitAny = false  // blocks collision
-			// 	}
-			// }
+		// 		if Bean.isCrouched {  // block collision for 0.25 seconds
+		// 			Bean.ignoredPlatformIndex = hitPlatformIndex
+		// 			Bean.ignoredCooldown = 0.25
+		// 			Bean.isGrounded = false
+		// 			hitAny = false  // blocks collision
+		// 		}
+		// 	}
+		Bean.Pos.X += Bean.Speed.X * dT
+		Bean.Pos.Y += Bean.Speed.Y * dT
 		
 		hitPlatformIndex = -1
 		Bean.restingOnPlatform = false
 			
 		resolveMapCollision(Platforms, &Bean)
-
-		if MapColl.Floor || Bean.restingOnPlatform{
+		
+		if MapColl.Floor || Bean.isGrounded{
 			Bean.isGrounded = true
 		}else {
 			Bean.isGrounded = false
@@ -236,7 +245,6 @@ func main() {
 		}
 		
 		
-		// Gravity -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 		if MapColl.Floor || Bean.isGrounded {
 			Gravity.Bean = 0
 		}else {
@@ -247,6 +255,7 @@ func main() {
 				Bean.Speed.Y = Gravity.Bean 
 			}
 		}
+		// Gravity -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 		// further collisions and speed setting ------------------------------------------------------------------------------------------------------------------------------------
@@ -270,8 +279,6 @@ func main() {
 		// 		Bean.Pos.X += Bean.Speed.X * remainingTime * dT
 		// 	}
 		// }else {
-			Bean.Pos.X += Bean.Speed.X * dT
-			Bean.Pos.Y += Bean.Speed.Y * dT
 		// 	// isGrounded = false	
 		// }
 

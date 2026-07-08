@@ -19,6 +19,7 @@ func getSignedCollisionRec(rect1, rect2 rl.Rectangle) rl.Rectangle {
 var maxArea float32
 
 func resolveMapCollision(platforms []Platform, actor *bean) {
+	actor.restingOnPlatform = false	
 	actorAABB := rl.NewRectangle(actor.Pos.X, actor.Pos.Y, actor.Width, actor.Height)
 	AABB := actorAABB
 	
