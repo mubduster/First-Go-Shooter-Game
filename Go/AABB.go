@@ -19,20 +19,30 @@ func Swetp_AABB(Moving, Static rl.Rectangle, Vel rl.Vector2) (collisionTime floa
 		yInvEntry = Static.Y - (Moving.Y + Moving.Height)
 		yInvExit = (Static.Y + Static.Height) - Moving.Y
 	}else {
-		yInvEntry = (Static.Y + Static.Width) - Moving.Y
+		yInvEntry = (Static.Y + Static.Height) - Moving.Y
 		yInvExit = Static.Y - (Moving.Y + Moving.Height)
 	}
 
 	if Vel.X == 0 {
-		xEntry = float32(math.Inf(-1))
-		xExit = float32(math.Inf(1))	
+		if Moving.X + Moving.Width > Static.X && Moving.X < Static.X + Static.Width{
+			xEntry = float32(math.Inf(-1))
+			xExit = float32(math.Inf(1))	
+		}else {
+			xEntry = float32(math.Inf(1))
+			xExit = float32(math.Inf(1))
+		}
 	}else {
 		xEntry	= xInvEntry / Vel.X
 		xExit = xInvExit / Vel.X
 	}
 	if Vel.Y == 0 {
-		yEntry = float32(math.Inf(-1))
-		yExit = float32(math.Inf(1))
+		if Moving.Y + Moving.Height	> Static.Y && Moving.Y < Static.Y + Static.Height { 
+			yEntry = float32(math.Inf(-1))
+			yExit = float32(math.Inf(1))
+		}else {
+			yEntry = float32(math.Inf(1))
+			yExit = float32(math.Inf(1))
+		}
 	}else {
 		yEntry = yInvEntry / Vel.Y
 		yExit = yInvExit / Vel.Y
