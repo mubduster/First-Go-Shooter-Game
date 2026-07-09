@@ -5,6 +5,7 @@ import(
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+// Collision Helper ----------------------------------------------------------------------------------------------------------
 func getSignedCollisionRec(rect1, rect2 rl.Rectangle) rl.Rectangle {
 	r := rl.GetCollisionRec(rect1, rect2)
 	if rect2.X < rect1.X {
@@ -15,7 +16,9 @@ func getSignedCollisionRec(rect1, rect2 rl.Rectangle) rl.Rectangle {
 	}
 	return r
 }
+//----------------------------------------------------------------------------------------------------------------------------
 
+// AABB Collision Handler ----------------------------------------------------------------------------------------------------
 var maxArea float32
 
 func resolveMapCollision(platforms []Platform, actor *bean) {
@@ -26,8 +29,11 @@ func resolveMapCollision(platforms []Platform, actor *bean) {
 		var mostOverlap rl.Rectangle
 		maxArea = -1
 
-		for _, p := range platforms {
+		for Index, p := range platforms {
 			if p.OneWay && ( actor.Speed.Y < 0 || actor.isCrouched){
+				continue
+			}
+			if Index == actor.ignoredPlatformIndex {
 				continue
 			}
 
@@ -59,9 +65,9 @@ func resolveMapCollision(platforms []Platform, actor *bean) {
 		}
 		if AABB.X != actorAABB.X {
 			actor.Speed.X = 0
-			actor.isGrounded = false
 		}
 		actor.Pos.X = AABB.X
 		actor.Pos.Y = AABB.Y
 	}
 }
+//-------------------------------------------------------------------------------------------------------------------------------
