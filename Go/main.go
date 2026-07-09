@@ -29,7 +29,8 @@ type bean struct {
 	hasJumped bool
 	isCrouched bool
 	ignoredPlatformIndex int
-	ignoredCooldown float32
+	IgnoredCooldown float32
+	CurrentPlatformIndex int
 	restingOnPlatform bool
 }
 type gravity struct {
@@ -67,7 +68,8 @@ var hitAny bool
 // var ignoreCooldown float32 
 var hitPlatformIndex int = -1
 var remainingTime float32 
-// var restingOnPlatform bool
+var restingOnPlatform bool
+const epsilon float32 = 1.0
 
 func main() {
 	rl.SetConfigFlags(rl.FlagWindowResizable | rl.FlagWindowMaximized)
@@ -88,9 +90,9 @@ func main() {
 		{Rect: rl.NewRectangle(30, 3370, 1200, 45), OneWay: false, Rotation: 35},
 	}
 	
-	Bean := bean{Pos: rl.NewVector2(World.X/2, World.Y/2), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 2000, Acceleration: 500, Drag: 460, Jump: 3400}
+	Bean := bean{Pos: rl.NewVector2(World.X/2, World.Y/2), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 2000, Acceleration: 500, Drag: 460, Jump: 3400, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1}
 	
-	Gravity := gravity{Max: 1000, Bean: 0, Force: 100}
+	Gravity := gravity{Max: 1500, Bean: 0, Force: 80}
 	
 	Camera := rl.Camera2D{Offset: rl.NewVector2(Screen.X/2, Screen.Y/2), Target: Bean.Pos, Rotation: 0.0, Zoom: 0.2}
 	
@@ -98,9 +100,9 @@ func main() {
 
 		dT := rl.GetFrameTime()
 
-		if Bean.ignoredCooldown > 0 {  // OneWay playform collision ignore timer countdown
-			Bean.ignoredCooldown -= dT
-			if Bean.ignoredCooldown <= 0 {
+		if Bean.IgnoredCooldown > 0 {  // OneWay playform collision ignore timer countdown
+			Bean.IgnoredCooldown -= dT
+			if Bean.IgnoredCooldown <= 0 {
 				Bean.ignoredPlatformIndex = -1  // resets OneWay collision
 			}
 		}
@@ -150,16 +152,16 @@ func main() {
 			Bean.Speed.X -= Bean.Acceleration 
 		}
 
-		if Bean.Speed.X > Bean.MaxSpeed {
+		if Bean.Speed.X > Bean.MaxSpeed  && rl.IsKeyDown(rl.KeyD) {
 			Bean.Speed.X = Bean.MaxSpeed
 		}
-		if Bean.Speed.Y > Bean.MaxSpeed {
-			Bean.Speed.Y = Bean.MaxSpeed
+		if Bean.Speed.X < -Bean.MaxSpeed && rl.IsKeyDown(rl.KeyA) {
+			Bean.Speed.X = -Bean.MaxSpeed
 		}
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 		
-		// Map Collisions ----------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Map Border Collisions ---------------------------------------------------------------------------------------------------------------------------------------------------
 		
 		// player := rl.NewRectangle(Bean.Pos.X, Bean.Pos.Y - (Bean.Radius*2), Bean.Width, Bean.Height + (Bean.Radius*2))
 		// earliestTime = float32(1.0)
@@ -204,7 +206,7 @@ func main() {
 			Bean.Pos.Y = Map.Border.Height - Bean.Height - 35
 			Bean.Speed.Y = 0.0
 			MapColl.Floor = true
-		}else if Bean.Pos.Y + Bean.Height < Map.Border.Height - 200 {
+		}else if Bean.Pos.Y + Bean.Height < Map.Border.Height + 200 {
 			MapColl.Floor = false
 		}
 		if Bean.Pos.Y + (Bean.Radius * 2) < Map.Border.Y + 50 {
@@ -213,10 +215,10 @@ func main() {
 		if Bean.Speed.X <= 0 && Bean.Pos.X  < Map.Border.X + 60 {
 			Bean.Speed.X = 0.0
 			Bean.Pos.X = Map.Border.X + Bean.Width + 10
-			}else if Bean.Speed.X >= 0 && Bean.Pos.X + Bean.Width > Map.Border.Width - 60 {
-				Bean.Speed.X = 0.0
-				Bean.Pos.X = Map.Border.Width - Bean.Width - 40
-			}
+		}else if Bean.Speed.X >= 0 && Bean.Pos.X + Bean.Width > Map.Border.Width - 60 {
+			Bean.Speed.X = 0.0
+			Bean.Pos.X = Map.Border.Width - Bean.Width - 40
+		}
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
 		
 		// if Bean.isGrounded && hitPlatformIndex != -1 && Platforms[hitPlatformIndex].OneWay {
@@ -233,18 +235,10 @@ func main() {
 		hitPlatformIndex = -1
 		Bean.restingOnPlatform = false
 			
-		resolveMapCollision(Platforms, &Bean)
-		
-		if MapColl.Floor || Bean.isGrounded{
-			Bean.isGrounded = true
-		}else {
-			Bean.isGrounded = false
-		}
-		if rl.IsKeyReleased(rl.KeyW) || rl.IsKeyReleased(rl.KeyUp) {
-			Bean.hasJumped = false
-		}
 		
 		
+		
+		// Gravity -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 		if MapColl.Floor || Bean.isGrounded {
 			Gravity.Bean = 0
 		}else {
@@ -255,8 +249,26 @@ func main() {
 				Bean.Speed.Y = Gravity.Bean 
 			}
 		}
-		// Gravity -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		resolveMapCollision(Platforms, &Bean)
+		for Index,p := range Platforms {
+			beanBottom := Bean.Pos.Y + Bean.Height
+
+			if Bean.Speed.X >= 0 && beanBottom >= p.Rect.Y - epsilon && beanBottom <= p.Rect.Y + epsilon && Bean.Pos.X + Bean.Width > p.Rect.X && Bean.Pos.X < p.Rect.X + p.Rect.Width{
+				Bean.restingOnPlatform = true
+				Bean.CurrentPlatformIndex = Index
+				break
+			}
+		}
+
+		if MapColl.Floor || Bean.restingOnPlatform{
+			Bean.isGrounded = true
+		}else {
+			Bean.isGrounded = false
+		}
+		if rl.IsKeyReleased(rl.KeyW) || rl.IsKeyReleased(rl.KeyUp) {
+			Bean.hasJumped = false
+		}
 
 		// further collisions and speed setting ------------------------------------------------------------------------------------------------------------------------------------
 		// if hitAny {
