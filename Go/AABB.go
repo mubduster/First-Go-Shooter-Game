@@ -31,6 +31,7 @@ func resolveMapCollision(platforms []Platform, actor *bean) {
 
 		for Index, p := range platforms {
 			if p.OneWay && ( actor.Speed.Y < 0 || actor.isCrouched){
+				// actor.Speed.Y -= 200
 				continue
 			}
 			if Index == actor.ignoredPlatformIndex {

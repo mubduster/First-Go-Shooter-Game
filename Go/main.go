@@ -21,6 +21,7 @@ type bean struct {
 	Radius	float32
 	Speed rl.Vector2
 	MaxSpeed float32
+	MaxSpeedY float32
 	Acceleration float32
 	Drag float32
 	Jump float32
@@ -87,6 +88,39 @@ func main() {
 		{Rect: rl.NewRectangle(30, 3650, 500, 56), OneWay: true},
 		{Rect: rl.NewRectangle(501, 3650, 1500, 56), OneWay: false},
 		{Rect: rl.NewRectangle(30, 3370, 1200, 56), OneWay: false},
+		{Rect: rl.NewRectangle(1230, 3370, 350, 56), OneWay: true},
+		{Rect: rl.NewRectangle(1581, 3370, 350, 56), OneWay: false},
+		{Rect: rl.NewRectangle(4000, 3650, 600, 56), OneWay: false},
+		{Rect: rl.NewRectangle(4601, 3650, 500, 56), OneWay: true},
+		{Rect: rl.NewRectangle(5102, 3650, 898, 56), OneWay: false},
+		{Rect: rl.NewRectangle(5470, 3370, 500, 56), OneWay: true},
+		{Rect: rl.NewRectangle(3600, 3370, 1870, 56), OneWay: false},	
+		{Rect: rl.NewRectangle(2600, 3700, 600, 180), OneWay: false}, // rectangle
+		{Rect: rl.NewRectangle(1400, 3070, 1200, 56), OneWay:  false},
+		{Rect: rl.NewRectangle(30, 3070, 800, 56), OneWay:  false},
+		{Rect: rl.NewRectangle(831, 3070, 570, 56), OneWay: true},
+		{Rect: rl.NewRectangle(2600, 3070, 600, 56), OneWay: true}, // middle platform
+		{Rect: rl.NewRectangle(3201, 3070, 1500, 56), OneWay: false},
+		{Rect: rl.NewRectangle(4702, 3070, 600, 56), OneWay: true},
+		{Rect: rl.NewRectangle(5302, 3070, 698, 56), OneWay: false},
+
+		{Rect: rl.NewRectangle(530, 2790, 4940, 56), OneWay: false},
+		{Rect: rl.NewRectangle(30, 2790, 500, 56), OneWay: true},
+		{Rect: rl.NewRectangle(5470, 2790, 500, 56), OneWay: true},
+
+		{Rect: rl.NewRectangle(30, 2510, 1000, 56), OneWay: false},
+		{Rect: rl.NewRectangle(4970, 2510, 1000, 56), OneWay: false},
+		{Rect: rl.NewRectangle(1800, 2510, 600, 56), OneWay: false},
+		{Rect: rl.NewRectangle(3550, 2510, 600, 56), OneWay: false},
+
+		{Rect: rl.NewRectangle(2950, 2235, 95, 300), OneWay: false},
+		{Rect: rl.NewRectangle(1800, 2235, 100, 240), OneWay: false},
+		{Rect: rl.NewRectangle(4050, 2235, 100, 240), OneWay: false},
+
+		// {Rect: rl.NewRectangle(30, 2230, 500, 56), OneWay: true},
+		{Rect: rl.NewRectangle(530, 2230, 4940, 56), OneWay: false},
+		// {Rect: rl.NewRectangle(5471, 2230, 500, 56), OneWay: true},
+		
 	}
 	
 	Bean := bean{Pos: rl.NewVector2(World.X/2, World.Y/2), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 2000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false}
@@ -118,6 +152,11 @@ func main() {
 		// Crouching Handler -------------------------------------------------------------------------------------------------------------------------------------------------------
 		oldHeight = Bean.Height
 		if rl.IsKeyDown(rl.KeyS) || rl.IsKeyDown(rl.KeyDown) {
+			Bean.isCrouched = true
+		}else {
+			Bean.isCrouched = false
+		}
+		if Bean.isCrouched {
 			Bean.Height = 50
 			Bean.MaxSpeed = 500
 			Bean.Jump = 1500
