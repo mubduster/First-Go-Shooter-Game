@@ -24,14 +24,14 @@ var maxArea float32
 func resolveMapCollision(platforms []Platform, actor *bean) {
 	actorAABB := rl.NewRectangle(actor.Pos.X, actor.Pos.Y, actor.Width, actor.Height)
 	AABB := actorAABB
+	playerBottom := actor.Pos.Y + actor.Height
 	
 	for i := 0; i < 10; i++ {
 		var mostOverlap rl.Rectangle
 		maxArea = -1
 
 		for Index, p := range platforms {
-			if p.OneWay && ( actor.Speed.Y < 0 || actor.isCrouched){
-				// actor.Speed.Y -= 200
+			if p.OneWay && playerBottom > p.Rect.Y && actor.Speed.Y < 0 {
 				continue
 			}
 			if Index == actor.ignoredPlatformIndex {

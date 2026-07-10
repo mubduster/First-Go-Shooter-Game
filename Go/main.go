@@ -120,7 +120,30 @@ func main() {
 		// {Rect: rl.NewRectangle(30, 2230, 500, 56), OneWay: true},
 		{Rect: rl.NewRectangle(530, 2230, 4940, 56), OneWay: false},
 		// {Rect: rl.NewRectangle(5471, 2230, 500, 56), OneWay: true},
-		
+
+		{Rect: rl.NewRectangle(30, 1950, 900, 56), OneWay: false},
+		{Rect: rl.NewRectangle(5070, 1950, 900, 56), OneWay: false},
+		{Rect: rl.NewRectangle(1400, 1950, 900, 56), OneWay: false},
+		{Rect: rl.NewRectangle(3700, 1950, 900, 56), OneWay: false},
+		{Rect: rl.NewRectangle(2700, 1950, 600, 56), OneWay: false},
+		{Rect: rl.NewRectangle(2300, 1950, 400, 56), OneWay: true},
+		{Rect: rl.NewRectangle(3300, 1950, 400, 56), OneWay: true},
+
+		{Rect: rl.NewRectangle(530, 1670, 1100, 56), OneWay: false},
+		{Rect: rl.NewRectangle(1630, 1600, 50, 125), OneWay: false},
+		{Rect: rl.NewRectangle(4370, 1670, 1100, 56), OneWay: false},
+		{Rect: rl.NewRectangle(4320, 1600, 50, 125), OneWay: false},
+
+		{Rect: rl.NewRectangle(1500, 1390, 1200, 56), OneWay: false},
+		{Rect: rl.NewRectangle(3300, 1390, 1200, 56), OneWay: false},
+		{Rect: rl.NewRectangle(2700, 1390, 600, 56), OneWay: true},
+
+		{Rect: rl.NewRectangle(30, 1390, 700, 56), OneWay:	false},
+		{Rect: rl.NewRectangle(5300, 1390, 700, 56), OneWay: false},
+
+		{Rect: rl.NewRectangle(500, 1110, 600, 56), OneWay: true},
+		{Rect: rl.NewRectangle(1101, 1110, 3800, 56), OneWay: false},
+		{Rect: rl.NewRectangle(4900, 1110,600, 56), OneWay: true},
 	}
 	
 	Bean := bean{Pos: rl.NewVector2(World.X/2, World.Y/2), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 2000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false}
@@ -247,8 +270,6 @@ func main() {
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 		// Platform Collisions -----------------------------------------------------------------------------------------------------------------------------------------------------
-		resolveMapCollision(Platforms, &Bean)  // AABB Collision function
-
 		if Bean.isCrouched && Bean.restingOnPlatform && Bean.CurrentPlatformIndex != -1 && Platforms[Bean.CurrentPlatformIndex].OneWay {
 			Bean.ignoredPlatformIndex = Bean.CurrentPlatformIndex
 			Bean.IgnoredCooldown = 0.25
@@ -272,6 +293,8 @@ func main() {
 				break
 			}
 		}
+
+		resolveMapCollision(Platforms, &Bean)  // AABB Collision function
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 		// Collision Check for Gravity and Jump Check ------------------------------------------------------------------------------------------------------------------------------
@@ -312,7 +335,7 @@ func main() {
 		
 		rl.EndMode2D()
 
-		rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded), 10, 10, 30, rl.GetColor(0xffffffff))
+		rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v\n Crouched: %v",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded, Bean.isCrouched), 10, 10, 30, rl.GetColor(0xffffffff))
 		
 		rl.EndDrawing()
 	}
