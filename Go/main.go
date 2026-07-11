@@ -144,6 +144,22 @@ func main() {
 		{Rect: rl.NewRectangle(500, 1110, 600, 56), OneWay: true},
 		{Rect: rl.NewRectangle(1101, 1110, 3800, 56), OneWay: false},
 		{Rect: rl.NewRectangle(4900, 1110,600, 56), OneWay: true},
+
+		{Rect: rl.NewRectangle(2075, 900, 500, 150), OneWay: false},
+		{Rect: rl.NewRectangle(3410, 900, 500, 150), OneWay: false},
+
+		{Rect: rl.NewRectangle(30, 830, 400, 56), OneWay: false},
+		{Rect: rl.NewRectangle(5570, 830, 400, 56), OneWay: false},
+
+		{Rect: rl.NewRectangle(530, 570, 1000, 56), OneWay: false},
+		{Rect: rl.NewRectangle(1830, 570, 1000, 56), OneWay: false},
+		{Rect: rl.NewRectangle(4470, 570, 1000, 56), OneWay: false},
+		{Rect: rl.NewRectangle(3170, 570, 1000, 56), OneWay: false},
+
+		{Rect: rl.NewRectangle(760, 300, 500, 56), OneWay: false},
+		{Rect: rl.NewRectangle(2075, 300, 500, 56), OneWay: false},
+		{Rect: rl.NewRectangle(4710, 300, 500, 56), OneWay: false},
+		{Rect: rl.NewRectangle(3410, 300, 500, 56), OneWay: false},
 	}
 	
 	Bean := bean{Pos: rl.NewVector2(World.X/2, World.Y/2), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 2000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false}
