@@ -48,10 +48,12 @@ type Platform struct {
 	Rect rl.Rectangle
 	OneWay bool
 }
+type onlyCrouch struct {
+	Rect rl.Rectangle
+}
 type mapColl struct {
 	Floor bool
 	Floor2 bool
-	onPlatform bool
 }
 var MapColl mapColl
 
@@ -85,7 +87,7 @@ func main() {
 		{Rect: rl.NewRectangle(5102, 3650, 898, 56), OneWay: false},
 		{Rect: rl.NewRectangle(5470, 3370, 500, 56), OneWay: true},
 		{Rect: rl.NewRectangle(3600, 3370, 1870, 56), OneWay: false},	
-		{Rect: rl.NewRectangle(2600, 3700, 600, 180), OneWay: false}, // rectangle
+		{Rect: rl.NewRectangle(2600, 3700, 600, 200), OneWay: false}, // rectangle
 		{Rect: rl.NewRectangle(1400, 3070, 1200, 56), OneWay:  false},
 		{Rect: rl.NewRectangle(30, 3070, 800, 56), OneWay:  false},
 		{Rect: rl.NewRectangle(831, 3070, 570, 56), OneWay: true},
@@ -149,13 +151,19 @@ func main() {
 		{Rect: rl.NewRectangle(4710, 300, 500, 56), OneWay: false},
 		{Rect: rl.NewRectangle(3410, 300, 500, 56), OneWay: false},
 	}
+
+	OnlyCrouch := []onlyCrouch{
+		{Rect: rl.NewRectangle(2615, 3800, 585, 200)},
+		{Rect: rl.NewRectangle(2090, 1000, 485, 100)},
+		{Rect: rl.NewRectangle(3425, 1000, 485, 100)},
+	}
 	
-	Bean := bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 2000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false}
-	Bean2 := bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 2000, Acceleration: 500, Drag: 4600, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false}
+	Bean := bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false}
+	Bean2 := bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false}
 	
 	Gravity := gravity{Max: 1500, Bean: 0, Bean2: 0, Force: 60}
 	
-	Camera := rl.Camera2D{Offset: rl.NewVector2(Screen.X/2, Screen.Y/2), Target: Bean.Pos, Rotation: 0.0, Zoom: 0.2}
+	Camera := rl.Camera2D{Offset: rl.NewVector2(Screen.X/2, Screen.Y/2), Target: rl.NewVector2(World.X/2, World.Y/2), Rotation: 0.0, Zoom: 0.2}
 
 	TextureStand := rl.LoadTexture("./Textures/model_player.png")
 	TextureCrouch := rl.LoadTexture("./Textures/model_player_crouch.png")
@@ -171,17 +179,24 @@ func main() {
 				Bean.ignoredPlatformIndex = -1  // resets OneWay collision
 			}
 		}
-
+		
 		if Bean.ignoredPlatformIndex != -1 {
 			p := Platforms[Bean.ignoredPlatformIndex]
 			if Bean.Pos.Y > p.Rect.Y + p.Rect.Height && Bean.IgnoredCooldown <= 0 {
 				Bean.ignoredPlatformIndex = -1
 			}
 		}
-
+		
 		if Bean2.IgnoredCooldown > 0 {
 			Bean2.IgnoredCooldown -= dT
-			if Bean.IgnoredCooldown <= 0 {
+			if Bean2.IgnoredCooldown <= 0 {
+				Bean2.ignoredPlatformIndex = -1
+			}
+		}
+
+		if Bean2.ignoredPlatformIndex != -1 {
+			p := Platforms[Bean2.ignoredPlatformIndex]
+			if Bean2.Pos.Y > p.Rect.Y + p.Rect.Height && Bean2.IgnoredCooldown <= 0 {
 				Bean2.ignoredPlatformIndex = -1
 			}
 		}
@@ -200,7 +215,18 @@ func main() {
 		if rl.IsKeyDown(rl.KeyK) {
 			Bean2.isCrouched = true
 		}else {
-			Bean.isCrouched = false
+			Bean2.isCrouched = false
+		}
+
+		for _,n := range OnlyCrouch {
+			if rl.CheckCollisionRecs(rl.NewRectangle(Bean.Pos.X, Bean.Pos.Y, Bean.Width, Bean.Height), n.Rect) {
+				Bean.isCrouched = true
+				Bean.hasJumped = true
+			}
+			if rl.CheckCollisionRecs(rl.NewRectangle(Bean2.Pos.X, Bean2.Pos.Y, Bean2.Width, Bean2.Height), n.Rect) {
+				Bean2.isCrouched = true
+				Bean2.hasJumped = true
+			}
 		}
 		
 		if Bean.isCrouched {
@@ -219,11 +245,11 @@ func main() {
 			Bean2.Height = 50
 			Bean2.MaxSpeed = 500
 			Bean2.Jump = 1500
-			Bean.isCrouched = true
+			Bean2.isCrouched = true
 		}else {
 			Bean2.Height = 100
 			Bean2.MaxSpeed = 1000
-			Bean2.Jump = 1500
+			Bean2.Jump = 3000
 			Bean2.isCrouched = false
 		}
 	
@@ -285,10 +311,10 @@ func main() {
 		}
 		if rl.IsKeyDown(rl.KeyJ) && rl.IsKeyDown(rl.KeyL) {
 			Bean2.Speed.X = 0.0
-		}else if rl.IsKeyDown(rl.KeyL) && Bean2.Speed.X < Bean.MaxSpeed {
+		}else if rl.IsKeyDown(rl.KeyL) && Bean2.Speed.X < Bean2.MaxSpeed {
 			Bean2.Speed.X += Bean2.Acceleration
 		}else if rl.IsKeyDown(rl.KeyJ) && -Bean2.Speed.X < Bean2.MaxSpeed {
-			Bean2.Speed.X -= Bean.Acceleration
+			Bean2.Speed.X -= Bean2.Acceleration
 		}
 
 		if Bean2.Speed.X > Bean2.MaxSpeed && rl.IsKeyDown(rl.KeyL) {
@@ -320,15 +346,15 @@ func main() {
 			Bean.Pos.X = Map.Border.Width - Bean.Width - 40
 		}
 
-		if Bean2.Speed.Y >= 0 && Bean2.Pos.Y + Bean.Height > Map.Border.Height - 50 {
+		if Bean2.Speed.Y >= 0 && Bean2.Pos.Y + Bean2.Height > Map.Border.Height - 50 {
 			Bean2.Pos.Y = Map.Border.Height - Bean2.Height - 35
 			Bean2.Speed.Y = 0.0
-			MapColl.Floor = true
+			MapColl.Floor2 = true
 		}else if Bean2.Pos.Y + Bean2.Height < Map.Border.Height + 200 {
 			MapColl.Floor2 = false
 		}
-		if Bean2.Pos.Y + (Bean.Radius*2) < Map.Border.Y + 50 {
-			Bean.Pos.Y = (Bean2.Radius*2) + Bean2.Height + 35
+		if Bean2.Pos.Y + (Bean2.Radius*2) < Map.Border.Y + 50 {
+			Bean2.Pos.Y = (Bean2.Radius*2) + Bean2.Height + 35
 			Bean2.Speed.Y = 0.0
 		}
 		if Bean2.Speed.X <= 0 && Bean2.Pos.X < Map.Border.X + 60 {
@@ -336,7 +362,7 @@ func main() {
 			Bean2.Pos.X = Map.Border.X + Bean2.Width + 10
 		}else if Bean2.Speed.X >= 0 && Bean2.Pos.X + Bean2.Width > Map.Border.Width - 60 {
 			Bean2.Speed.X = 0.0
-			Bean2.Pos.X = Map.Border.Width - Bean.Width - 40
+			Bean2.Pos.X = Map.Border.Width - Bean2.Width - 40
 		}
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
 		
@@ -401,13 +427,21 @@ func main() {
 			}
 
 			beanBottom := Bean.Pos.Y + Bean.Height
-			bean2Bottom := Bean2.Pos.Y + Bean2.Height
 
 			if beanBottom >= p.Rect.Y - epsilon && beanBottom <= p.Rect.Y + epsilon && Bean.Pos.X + Bean.Width > p.Rect.X && Bean.Pos.X < p.Rect.X + p.Rect.Width {
 				Bean.restingOnPlatform = true
 				Bean.CurrentPlatformIndex = Index
 				break
 			}
+		}
+
+		for Index, p := range Platforms {
+			if Index == Bean2.ignoredPlatformIndex {
+				continue
+			}
+
+			bean2Bottom	:= Bean2.Pos.Y + Bean2.Height
+
 			if bean2Bottom >= p.Rect.Y - epsilon && bean2Bottom <= p.Rect.Y + epsilon && Bean2.Pos.X + Bean2.Width > p.Rect.X && Bean2.Pos.X < p.Rect.X + p.Rect.Width {
 				Bean2.restingOnPlatform = true
 				Bean2.CurrentPlatformIndex = Index
