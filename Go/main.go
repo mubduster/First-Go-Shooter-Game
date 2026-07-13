@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-
+	Math "math"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -33,8 +33,21 @@ type bean struct {
 	IgnoredCooldown float32
 	CurrentPlatformIndex int
 	restingOnPlatform bool
+	Health float32
 }
-
+type gun struct {
+	Dir int
+	PrevDir int
+	Pos rl.Vector2
+	Width float32
+	Height float32
+	Angle float32
+	Mag int
+	Shots int
+	CanShoot bool
+	Delay float32
+	Barrel rl.Vector2
+}
 type gravity struct {
 	Max float32
 	Bean float32
@@ -158,9 +171,12 @@ func main() {
 		{Rect: rl.NewRectangle(3425, 1000, 485, 100)},
 	}
 	
-	Bean := bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false}
-	Bean2 := bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false}
+	Bean := bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
+	Bean2 := bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
 	
+	Gun := gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+	Gun2 := gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 180, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+
 	Gravity := gravity{Max: 1500, Bean: 0, Bean2: 0, Force: 60}
 	
 	Camera := rl.Camera2D{Offset: rl.NewVector2(Screen.X/2, Screen.Y/2), Target: rl.NewVector2(World.X/2, World.Y/2), Rotation: 0.0, Zoom: 0.2}
@@ -293,8 +309,10 @@ func main() {
 			Bean.Speed.X = 0.0
 		}else if rl.IsKeyDown(rl.KeyD) && Bean.Speed.X < Bean.MaxSpeed {
 			Bean.Speed.X += Bean.Acceleration 
+			Gun.Dir = 1
 		}else if rl.IsKeyDown(rl.KeyA) && -Bean.Speed.X < Bean.MaxSpeed {
 			Bean.Speed.X -= Bean.Acceleration 
+			Gun.Dir = -1
 		}
 
 		if Bean.Speed.X > Bean.MaxSpeed  && rl.IsKeyDown(rl.KeyD) {
@@ -313,8 +331,10 @@ func main() {
 			Bean2.Speed.X = 0.0
 		}else if rl.IsKeyDown(rl.KeyL) && Bean2.Speed.X < Bean2.MaxSpeed {
 			Bean2.Speed.X += Bean2.Acceleration
+			Gun2.Dir = 1
 		}else if rl.IsKeyDown(rl.KeyJ) && -Bean2.Speed.X < Bean2.MaxSpeed {
 			Bean2.Speed.X -= Bean2.Acceleration
+			Gun2.Dir = -1
 		}
 
 		if Bean2.Speed.X > Bean2.MaxSpeed && rl.IsKeyDown(rl.KeyL) {
@@ -474,6 +494,87 @@ func main() {
 		}
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+		// Gun ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		
+		if rl.IsKeyDown(rl.KeyE) && rl.IsKeyDown(rl.KeyQ) {
+			
+		}else if Gun.Dir == 1 {
+			Gun.Pos.X = Bean.Pos.X + 25
+			Gun.Pos.Y = Bean.Pos.Y + 20
+				
+			if Gun.Dir != Gun.PrevDir {
+				Gun.Angle = 180 - Gun.Angle
+				Gun.PrevDir = Gun.Dir
+			}
+
+			if rl.IsKeyDown(rl.KeyE) && Gun.Angle < 90 {
+				Gun.Angle += 0.7
+			}else if rl.IsKeyDown(rl.KeyQ) && Gun.Angle > -90 {
+				Gun.Angle -= 0.7
+			}
+
+			Gun.Barrel.X = Gun.Pos.X + float32( Math.Cos( float64( (Gun.Angle / 180) * Math.Pi ) )   * float64(Gun.Width) )
+			Gun.Barrel.Y = Gun.Pos.Y + float32( Math.Sin( float64( (Gun.Angle / 180) * Math.Pi ) )   * float64(Gun.Width) )
+
+		}else if Gun.Dir == -1 {
+			Gun.Pos.X = Bean.Pos.X + 15
+			Gun.Pos.Y = Bean.Pos.Y + 20
+
+			if Gun.Dir != Gun.PrevDir {
+				Gun.Angle = 180 - Gun.Angle
+				Gun.PrevDir = Gun.Dir
+			}
+
+			if rl.IsKeyDown(rl.KeyQ) && Gun.Angle > 90 {
+				Gun.Angle += 0.7
+			}else if rl.IsKeyDown(rl.KeyE) && Gun.Angle < 270 {
+				Gun.Angle -= 0.7
+			}
+
+			Gun.Barrel.X = Gun.Pos.X + float32( Math.Cos( float64( (Gun.Angle / 180) * Math.Pi ) ) * float64(Gun.Width) )
+			Gun.Barrel.Y = Gun.Pos.Y + float32( Math.Sin( float64( (Gun.Angle / 180) * Math.Pi ) ) * float64(Gun.Width) )
+		}
+
+		
+		if rl.IsKeyDown(rl.KeyU) && rl.IsKeyDown(rl.KeyO) {
+			
+		}else if Gun2.Dir == 1 {
+			Gun2.Pos.X = Bean2.Pos.X + 25
+			Gun2.Pos.Y = Bean2.Pos.Y + 20
+			
+			if Gun2.Dir != Gun2.PrevDir {
+				Gun2.Angle = 180 - Gun2.Angle
+				Gun2.PrevDir = Gun2.Dir
+			}
+
+			if rl.IsKeyDown(rl.KeyO) && Gun2.Angle < 270 {
+				Gun2.Angle += 0.7
+			}else if rl.IsKeyDown(rl.KeyU) && Gun2.Angle > 90 {
+				Gun2.Angle -= 0.7
+			}
+
+			Gun2.Barrel.X = Gun2.Pos.X + float32( Math.Cos( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
+			Gun2.Barrel.Y = Gun2.Pos.Y + float32( Math.Sin( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
+		}else if Gun2.Dir == -1 {
+			Gun2.Pos.X = Bean2.Pos.X + 15
+			Gun2.Pos.Y = Bean2.Pos.Y + 20
+			
+			if Gun2.Dir != Gun2.PrevDir {
+				Gun2.Angle = 180 - Gun2.Angle
+				Gun2.PrevDir = Gun2.Dir
+			}
+
+			if rl.IsKeyDown(rl.KeyU) && Gun2.Angle < 90 {
+				Gun2.Angle += 0.7
+			}else if rl.IsKeyDown(rl.KeyO) && Gun2.Angle > -90 {
+				Gun2.Angle -= 0.7
+			}
+
+			Gun2.Barrel.X = Gun2.Pos.X + float32( Math.Cos( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
+			Gun2.Barrel.Y = Gun2.Pos.Y + float32( Math.Sin( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
+		}
+
+		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		rl.BeginDrawing()
 
 		rl.ClearBackground(rl.GetColor(0x0034a9ff))
@@ -513,10 +614,14 @@ func main() {
 		}else {
 			rl.DrawTextureV(TextureCrouch, rl.NewVector2(Bean.Pos.X, Bean.Pos.Y - (Bean.Radius*2)), rl.GetColor(0xffffffff))
 		}
+
+		rl.DrawRectanglePro(rl.NewRectangle(Gun.Pos.X, Gun.Pos.Y, Gun.Width, Gun.Height), rl.NewVector2(0, Gun.Height/2), Gun.Angle, rl.GetColor(0x22ff22ff))  // temporary gun renderer
+		rl.DrawRectangleV(Gun.Barrel, rl.NewVector2(20, 20), rl.GetColor(0xff0000ff))  // temporary rectangle to track the barrel end position
+		rl.DrawRectanglePro(rl.NewRectangle(Gun2.Pos.X, Gun2.Pos.Y, Gun2.Width, Gun2.Height), rl.NewVector2(Gun2.Width, Gun2.Height/2), Gun2.Angle, rl.GetColor(0x555faaff))
 			
 		rl.EndMode2D()
 
-		rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v\n Crouched: %v",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded, Bean.isCrouched), 10, 10, 30, rl.GetColor(0xffffffff))
+		rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v\nCrouched: %v\nGun Angle: %0.1f\nGun2 Angle: %0.1f",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded, Bean.isCrouched, Gun.Angle, Gun2.Angle), 10, 10, 30, rl.GetColor(0xffffffff))
 		
 		rl.EndDrawing()
 	}
