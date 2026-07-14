@@ -48,6 +48,16 @@ type gun struct {
 	Delay float32
 	Barrel rl.Vector2
 }
+type bullet struct{
+	Angle float32
+	Pos rl.Vector2
+	PrevPos rl.Vector2
+	Radius float32
+	Speed rl.Vector2
+	Damage float32
+	Alive bool
+	Time float32
+}
 type gravity struct {
 	Max float32
 	Bean float32
@@ -177,12 +187,16 @@ func main() {
 	Gun := gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
 	Gun2 := gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 180, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
 
+	Bullets := []bullet{}
+
 	Gravity := gravity{Max: 1500, Bean: 0, Bean2: 0, Force: 60}
 	
 	Camera := rl.Camera2D{Offset: rl.NewVector2(Screen.X/2, Screen.Y/2), Target: rl.NewVector2(World.X/2, World.Y/2), Rotation: 0.0, Zoom: 0.2}
 
 	TextureStand := rl.LoadTexture("./Textures/model_player.png")
 	TextureCrouch := rl.LoadTexture("./Textures/model_player_crouch.png")
+
+	TextureBullet := rl.LoadTexture("./Textures/Bullet.png")  //Bullet center 9,9 and size 18,18
 	
 	for !rl.WindowShouldClose(){
 
@@ -322,7 +336,7 @@ func main() {
 			Bean.Speed.X = -Bean.MaxSpeed
 		}
 
-		if rl.IsKeyDown(rl.KeyI) && -Bean2.Speed.Y < Bean2.MaxSpeed && (Bean2.isGrounded && !Bean2.hasJumped){
+		if rl.IsKeyPressed(rl.KeyI) && -Bean2.Speed.Y < Bean2.MaxSpeed && (Bean2.isGrounded && !Bean2.hasJumped){
 			Bean2.Speed.Y -= Bean2.Jump
 			Bean2.isGrounded = false
 			Bean2.hasJumped = true
@@ -496,6 +510,7 @@ func main() {
 
 		// Gun ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		
+		// Bean1 Gun --------------------------------------------------------------------------------------------------------------------------------------------
 		if rl.IsKeyDown(rl.KeyE) && rl.IsKeyDown(rl.KeyQ) {
 			
 		}else if Gun.Dir == 1 {
@@ -535,7 +550,12 @@ func main() {
 			Gun.Barrel.Y = Gun.Pos.Y + float32( Math.Sin( float64( (Gun.Angle / 180) * Math.Pi ) ) * float64(Gun.Width) )
 		}
 
+		if rl.IsKeyDown(rl.KeyF) && Gun.CanShoot{
+			Bullets = append(Bullets, NewBullets(Gun))
+		}
+		//-------------------------------------------------------------------------------------------------------------------------------------------------------
 		
+		//Bean2 Gun ---------------------------------------------------------------------------------------------------------------------------------------------
 		if rl.IsKeyDown(rl.KeyU) && rl.IsKeyDown(rl.KeyO) {
 			
 		}else if Gun2.Dir == 1 {
@@ -563,16 +583,30 @@ func main() {
 				Gun2.Angle = 180 - Gun2.Angle
 				Gun2.PrevDir = Gun2.Dir
 			}
-
+			
 			if rl.IsKeyDown(rl.KeyU) && Gun2.Angle < 90 {
 				Gun2.Angle += 0.7
-			}else if rl.IsKeyDown(rl.KeyO) && Gun2.Angle > -90 {
-				Gun2.Angle -= 0.7
+				}else if rl.IsKeyDown(rl.KeyO) && Gun2.Angle > -90 {
+					Gun2.Angle -= 0.7
+				}
+				
+				Gun2.Barrel.X = Gun2.Pos.X + float32( Math.Cos( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
+				Gun2.Barrel.Y = Gun2.Pos.Y + float32( Math.Sin( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
 			}
+			//------------------------------------------------------------------------------------------------------------------------------------------------------
 
-			Gun2.Barrel.X = Gun2.Pos.X + float32( Math.Cos( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
-			Gun2.Barrel.Y = Gun2.Pos.Y + float32( Math.Sin( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
-		}
+			for Bullet := range Bullets {
+				Bullets[Bullet].PrevPos = Bullets[Bullet].Pos
+				Bullets[Bullet].Pos.X += Bullets[Bullet].Speed.X * dT
+				Bullets[Bullet].Pos.Y += Bullets[Bullet].Speed.Y * dT
+				if Bullets[Bullet].Pos.X < Map.Border.X + 1 || Bullets[Bullet].Pos.X  > Map.Border.X + Map.Border.Width - 1 {
+					Bullets[Bullet].Speed.X = -Bullets[Bullet].Speed.X
+				}else if Bullets[Bullet].Pos.Y > Map.Border.Y + Map.Border.Height + 1 || Bullets[Bullet].Pos.Y < Map.Border.Y + 1 {
+					Bullets[Bullet].Speed.Y = -Bullets[Bullet].Speed.Y
+				}
+				resolveMapBulletCollison(Platforms, &Bullets[Bullet])
+
+			}
 
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		rl.BeginDrawing()
@@ -593,6 +627,11 @@ func main() {
 			}else {
 				rl.DrawRectangleRec(p.Rect, colorSolid)
 			}
+		}
+
+		for _, b := range Bullets {
+			rl.DrawTexturePro(TextureBullet, rl.NewRectangle(0, 0, 18, 18), rl.NewRectangle(b.Pos.X, b.Pos.Y, 18, 18), rl.NewVector2(9,9), b.Angle, rl.GetColor(0xffffffff))
+			rl.DrawCircleV(b.Pos, b.Radius, rl.GetColor(0xff0000ff))
 		}
 		
 		rl.DrawRectangleV(Bean.Pos, rl.NewVector2(Bean.Width, Bean.Height), rl.GetColor(0x00ffffff))
