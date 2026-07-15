@@ -540,9 +540,9 @@ func main() {
 				Gun.PrevDir = Gun.Dir
 			}
 
-			if rl.IsKeyDown(rl.KeyQ) && Gun.Angle > 90 {
+			if rl.IsKeyDown(rl.KeyQ) && Gun.Angle < 270 {
 				Gun.Angle += 0.7
-			}else if rl.IsKeyDown(rl.KeyE) && Gun.Angle < 270 {
+			}else if rl.IsKeyDown(rl.KeyE) && Gun.Angle > 90 {
 				Gun.Angle -= 0.7
 			}
 
@@ -590,20 +590,34 @@ func main() {
 					Gun2.Angle -= 0.7
 				}
 				
+				CheckGunWallCollision(&Gun, Platforms)
+				
 				Gun2.Barrel.X = Gun2.Pos.X + float32( Math.Cos( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
 				Gun2.Barrel.Y = Gun2.Pos.Y + float32( Math.Sin( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
 			}
 			//------------------------------------------------------------------------------------------------------------------------------------------------------
 
+
 			for Bullet := range Bullets {
 				Bullets[Bullet].PrevPos = Bullets[Bullet].Pos
 				Bullets[Bullet].Pos.X += Bullets[Bullet].Speed.X * dT
 				Bullets[Bullet].Pos.Y += Bullets[Bullet].Speed.Y * dT
-				if Bullets[Bullet].Pos.X < Map.Border.X + 1 || Bullets[Bullet].Pos.X  > Map.Border.X + Map.Border.Width - 1 {
+
+				if Bullets[Bullet].Pos.X < Map.Border.X + 50 {
 					Bullets[Bullet].Speed.X = -Bullets[Bullet].Speed.X
-				}else if Bullets[Bullet].Pos.Y > Map.Border.Y + Map.Border.Height + 1 || Bullets[Bullet].Pos.Y < Map.Border.Y + 1 {
-					Bullets[Bullet].Speed.Y = -Bullets[Bullet].Speed.Y
+					Bullets[Bullet].Pos.X += 5
+				}else if Bullets[Bullet].Pos.X  > Map.Border.X + Map.Border.Width - 50 {
+					Bullets[Bullet].Speed.X = -Bullets[Bullet].Speed.X
+					Bullets[Bullet].Pos.X -= 5
 				}
+				if Bullets[Bullet].Pos.Y > Map.Border.Y + Map.Border.Height - 45 {
+					Bullets[Bullet].Speed.Y = -Bullets[Bullet].Speed.Y
+					Bullets[Bullet].Pos.Y -= 5
+				}else if Bullets[Bullet].Pos.Y < Map.Border.Y + 45 {
+					Bullets[Bullet].Speed.Y = -Bullets[Bullet].Speed.Y
+					Bullets[Bullet].Pos.Y += 5
+				}
+				
 				resolveMapBulletCollison(Platforms, &Bullets[Bullet])
 
 			}
