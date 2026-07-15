@@ -185,7 +185,7 @@ func main() {
 	Bean2 := bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
 	
 	Gun := gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
-	Gun2 := gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 180, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+	Gun2 := gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
 
 	Bullets := []bullet{}
 
@@ -545,10 +545,12 @@ func main() {
 			}else if rl.IsKeyDown(rl.KeyE) && Gun.Angle > 90 {
 				Gun.Angle -= 0.7
 			}
-
+			
 			Gun.Barrel.X = Gun.Pos.X + float32( Math.Cos( float64( (Gun.Angle / 180) * Math.Pi ) ) * float64(Gun.Width) )
 			Gun.Barrel.Y = Gun.Pos.Y + float32( Math.Sin( float64( (Gun.Angle / 180) * Math.Pi ) ) * float64(Gun.Width) )
 		}
+		
+		CheckBarrelPos(&Gun, Map, Platforms)
 
 		if rl.IsKeyDown(rl.KeyF) && Gun.CanShoot{
 			Bullets = append(Bullets, NewBullets(Gun))
@@ -567,9 +569,9 @@ func main() {
 				Gun2.PrevDir = Gun2.Dir
 			}
 
-			if rl.IsKeyDown(rl.KeyO) && Gun2.Angle < 270 {
+			if rl.IsKeyDown(rl.KeyO) && Gun2.Angle < 90 {
 				Gun2.Angle += 0.7
-			}else if rl.IsKeyDown(rl.KeyU) && Gun2.Angle > 90 {
+			}else if rl.IsKeyDown(rl.KeyU) && Gun2.Angle > -90 {
 				Gun2.Angle -= 0.7
 			}
 
@@ -584,16 +586,20 @@ func main() {
 				Gun2.PrevDir = Gun2.Dir
 			}
 			
-			if rl.IsKeyDown(rl.KeyU) && Gun2.Angle < 90 {
+			if rl.IsKeyDown(rl.KeyU) && Gun2.Angle < 270 {
 				Gun2.Angle += 0.7
-				}else if rl.IsKeyDown(rl.KeyO) && Gun2.Angle > -90 {
+				}else if rl.IsKeyDown(rl.KeyO) && Gun2.Angle > 90 {
 					Gun2.Angle -= 0.7
 				}
-				
-				CheckGunWallCollision(&Gun, Platforms)
-				
-				Gun2.Barrel.X = Gun2.Pos.X + float32( Math.Cos( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
-				Gun2.Barrel.Y = Gun2.Pos.Y + float32( Math.Sin( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
+			}
+			
+			Gun2.Barrel.X = Gun2.Pos.X + float32( Math.Cos( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
+			Gun2.Barrel.Y = Gun2.Pos.Y + float32( Math.Sin( float64( (Gun2.Angle / 180) * Math.Pi) ) * float64(Gun2.Width) )
+
+			CheckBarrelPos(&Gun2, Map, Platforms)
+
+			if rl.IsKeyDown(rl.KeySemicolon) {
+				Bullets = append(Bullets, NewBullets(Gun2))
 			}
 			//------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -618,9 +624,10 @@ func main() {
 					Bullets[Bullet].Pos.Y += 5
 				}
 				
-				resolveMapBulletCollison(Platforms, &Bullets[Bullet])
+				resolveMapBulletCollision(Platforms, &Bullets[Bullet])
 
 			}
+
 
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		rl.BeginDrawing()
@@ -670,7 +677,7 @@ func main() {
 
 		rl.DrawRectanglePro(rl.NewRectangle(Gun.Pos.X, Gun.Pos.Y, Gun.Width, Gun.Height), rl.NewVector2(0, Gun.Height/2), Gun.Angle, rl.GetColor(0x22ff22ff))  // temporary gun renderer
 		rl.DrawRectangleV(Gun.Barrel, rl.NewVector2(20, 20), rl.GetColor(0xff0000ff))  // temporary rectangle to track the barrel end position
-		rl.DrawRectanglePro(rl.NewRectangle(Gun2.Pos.X, Gun2.Pos.Y, Gun2.Width, Gun2.Height), rl.NewVector2(Gun2.Width, Gun2.Height/2), Gun2.Angle, rl.GetColor(0x555faaff))
+		rl.DrawRectanglePro(rl.NewRectangle(Gun2.Pos.X, Gun2.Pos.Y, Gun2.Width, Gun2.Height), rl.NewVector2(0, Gun2.Height/2), Gun2.Angle, rl.GetColor(0x555faaff))
 			
 		rl.EndMode2D()
 

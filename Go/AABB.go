@@ -74,7 +74,7 @@ func resolveMapCollision(platforms []Platform, actor *bean) {
 //-------------------------------------------------------------------------------------------------------------------------------
 
 // Map Bullet Collision Handler -------------------------------------------------------------------------------------------------
-func resolveMapBulletCollison (Platforms []Platform, Bullet *bullet) {
+func resolveMapBulletCollision (Platforms []Platform, Bullet *bullet) {
 	bulletRect := rl.NewRectangle(Bullet.Pos.X - Bullet.Radius, Bullet.Pos.Y - Bullet.Radius, Bullet.Radius * 2, Bullet.Radius * 2) 
 
 	var mostOverlap rl.Rectangle
@@ -114,7 +114,49 @@ func resolveMapBulletCollison (Platforms []Platform, Bullet *bullet) {
 //-------------------------------------------------------------------------------------------------------------------------------
 
 // Stop Gun from penetrating walls ----------------------------------------------------------------------------------------------
-func CheckGunWallCollision (Gun *gun, Platforms []Platform) {
-	
+var point rl.Vector2
+func CheckBarrelPos (Gun *gun, Map Map, Platforms []Platform) {
+	Radians := float64(Gun.Angle / 180) * Math.Pi
+
+	dir := rl.NewVector2(float32(Math.Cos(float64(Radians))), float32(Math.Sin(float64(Radians))))
+
+	Gun.Barrel = Gun.Pos
+
+	const step float32 = 1
+
+	for d := float32(0); d <= Gun.Width; d+= step {
+		
+		if Gun.Dir == 1{
+			point = rl.NewVector2(Gun.Pos.X + dir.X * d + 5, Gun.Pos.Y + dir.Y * d -5)
+		}else {
+			point = rl.NewVector2(Gun.Pos.X + dir.X * d - 5, Gun.Pos.Y + dir.Y * d -5)
+		} 
+		
+		blocked := false
+
+		if point.X < Map.Border.X + 50 || point.X > Map.Border.X + Map.Border.Width - 50 || point.Y < Map.Border.Y + 50 || point.Y > Map.Border.Y + Map.Border.Height - 50 {
+			blocked = true	
+		}
+
+		for _,p := range Platforms {
+			if p.OneWay {
+				continue
+			}
+
+			const padding float32 = 8
+			Rect := rl.NewRectangle(p.Rect.X, p.Rect.Y - padding, p.Rect.Width, p.Rect.Height + padding)
+
+			if rl.CheckCollisionPointRec(point, Rect) {
+				blocked = true
+				break
+			}
+		}
+
+		if blocked {
+			break
+		}
+
+		Gun.Barrel = point
+	}
 }
 //-------------------------------------------------------------------------------------------------------------------------------
