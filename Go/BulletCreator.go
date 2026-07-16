@@ -6,9 +6,9 @@ import (
 )
 
 var BulletCollisionRadius float32 = 9 // set to image size / 2
-var BulletSpeed float32 = 900
+var BulletSpeed float32 = 1300
 var BulletDamage float32 = 20
-var BulletLifeSpan float32 = 15
+var BulletLifeSpan float32 = 2.5
 
 func NewBullets (g gun) bullet {
 	Radians := (g.Angle / 180) * Math.Pi

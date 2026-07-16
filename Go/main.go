@@ -34,6 +34,8 @@ type bean struct {
 	CurrentPlatformIndex int
 	restingOnPlatform bool
 	Health float32
+	PowersNumber int
+	PowerDuration float32
 }
 type gun struct {
 	Dir int
@@ -78,11 +80,34 @@ type mapColl struct {
 	Floor bool
 	Floor2 bool
 }
+type power struct {
+	NFirerate float32
+	FireRate float32
+	NDamage float32
+	Damage float32
+	NReload float32
+	Reload	float32
+	NMag float32
+	Mag float32
+	NHealth float32
+	Health float32
+	Imune bool
+}
+type powerBox struct {
+	Power string
+	Pos rl.Vector2
+	Width float32
+	Height float32
+	Alive bool
+	Time float32
+}
+
 var MapColl mapColl
 
 var Platforms []Platform
 var colorOneWay rl.Color = rl.GetColor(0x444444ff)
 var colorSolid rl.Color = rl.GetColor(0x000000ff) 
+var width float32
 
 const epsilon float32 = 2.5
 
@@ -185,7 +210,7 @@ func main() {
 	Bean2 := bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
 	
 	Gun := gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
-	Gun2 := gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+	Gun2 := gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
 
 	Bullets := []bullet{}
 
@@ -197,6 +222,8 @@ func main() {
 	TextureCrouch := rl.LoadTexture("./Textures/model_player_crouch.png")
 
 	TextureBullet := rl.LoadTexture("./Textures/Bullet.png")  //Bullet center 9,9 and size 18,18
+	TextureGun := rl.LoadTexture("./Textures/Gun.png")
+	TextureGunFlipped := rl.LoadTexture("./Textures/Gun_flipped.png")
 	
 	for !rl.WindowShouldClose(){
 
@@ -528,8 +555,8 @@ func main() {
 				Gun.Angle -= 0.7
 			}
 
-			Gun.Barrel.X = Gun.Pos.X + float32( Math.Cos( float64( (Gun.Angle / 180) * Math.Pi ) )   * float64(Gun.Width) )
-			Gun.Barrel.Y = Gun.Pos.Y + float32( Math.Sin( float64( (Gun.Angle / 180) * Math.Pi ) )   * float64(Gun.Width) )
+			Gun.Barrel.X = Gun.Pos.X + float32( Math.Cos( float64( (Gun.Angle / 180) * Math.Pi ) ) * float64(Gun.Width) )
+			Gun.Barrel.Y = Gun.Pos.Y + float32( Math.Sin( float64( (Gun.Angle / 180) * Math.Pi ) ) * float64(Gun.Width) )
 
 		}else if Gun.Dir == -1 {
 			Gun.Pos.X = Bean.Pos.X + 15
@@ -604,7 +631,7 @@ func main() {
 			//------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-			for Bullet := range Bullets {
+			for Bullet := 0; Bullet < len(Bullets); {
 				Bullets[Bullet].PrevPos = Bullets[Bullet].Pos
 				Bullets[Bullet].Pos.X += Bullets[Bullet].Speed.X * dT
 				Bullets[Bullet].Pos.Y += Bullets[Bullet].Speed.Y * dT
@@ -612,24 +639,44 @@ func main() {
 				if Bullets[Bullet].Pos.X < Map.Border.X + 50 {
 					Bullets[Bullet].Speed.X = -Bullets[Bullet].Speed.X
 					Bullets[Bullet].Pos.X += 5
+					Bullets[Bullet].Time += 0.2
 				}else if Bullets[Bullet].Pos.X  > Map.Border.X + Map.Border.Width - 50 {
 					Bullets[Bullet].Speed.X = -Bullets[Bullet].Speed.X
 					Bullets[Bullet].Pos.X -= 5
+					Bullets[Bullet].Time += 0.2
 				}
 				if Bullets[Bullet].Pos.Y > Map.Border.Y + Map.Border.Height - 45 {
 					Bullets[Bullet].Speed.Y = -Bullets[Bullet].Speed.Y
 					Bullets[Bullet].Pos.Y -= 5
+					Bullets[Bullet].Time += 0.2
 				}else if Bullets[Bullet].Pos.Y < Map.Border.Y + 45 {
 					Bullets[Bullet].Speed.Y = -Bullets[Bullet].Speed.Y
 					Bullets[Bullet].Pos.Y += 5
+					Bullets[Bullet].Time += 0.2
 				}
 				
 				resolveMapBulletCollision(Platforms, &Bullets[Bullet])
 
+				CheckBulletPlayerCollision(&Bullets[Bullet], &Bean)
+				if Bullets[Bullet].Time <= 0 {
+					Bullets[Bullet] = Bullets[len(Bullets)-1]
+					Bullets = Bullets[:len(Bullets)-1]
+					// Bullet--
+					}else {
+						Bullets[Bullet].Time -= dT
+					Bullet++
+				}
+				
 			}
 
-
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+		// Health Bar --------------------------------------------------------------------------------------------------------------------------------------------------------------
+		if Bean.Health < 0 {
+			Bean.Health = 0
+		}
+		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 		rl.BeginDrawing()
 
 		rl.ClearBackground(rl.GetColor(0x0034a9ff))
@@ -637,8 +684,6 @@ func main() {
 		
 		rl.BeginMode2D(Camera)
 		rl.DrawRectangle(3000, 3000, 500, 500, rl.GetColor(0xff0000ff))
-		
-		
 		
 		rl.DrawRectangleLinesEx(Map.Border, 30, rl.GetColor(0x000000ff))
 		
@@ -652,7 +697,7 @@ func main() {
 
 		for _, b := range Bullets {
 			rl.DrawTexturePro(TextureBullet, rl.NewRectangle(0, 0, 18, 18), rl.NewRectangle(b.Pos.X, b.Pos.Y, 18, 18), rl.NewVector2(9,9), b.Angle, rl.GetColor(0xffffffff))
-			rl.DrawCircleV(b.Pos, b.Radius, rl.GetColor(0xff0000ff))
+			// rl.DrawCircleV(b.Pos, b.Radius, rl.GetColor(0xff0000ff))
 		}
 		
 		rl.DrawRectangleV(Bean.Pos, rl.NewVector2(Bean.Width, Bean.Height), rl.GetColor(0x00ffffff))
@@ -675,14 +720,37 @@ func main() {
 			rl.DrawTextureV(TextureCrouch, rl.NewVector2(Bean.Pos.X, Bean.Pos.Y - (Bean.Radius*2)), rl.GetColor(0xffffffff))
 		}
 
-		rl.DrawRectanglePro(rl.NewRectangle(Gun.Pos.X, Gun.Pos.Y, Gun.Width, Gun.Height), rl.NewVector2(0, Gun.Height/2), Gun.Angle, rl.GetColor(0x22ff22ff))  // temporary gun renderer
-		rl.DrawRectangleV(Gun.Barrel, rl.NewVector2(20, 20), rl.GetColor(0xff0000ff))  // temporary rectangle to track the barrel end position
-		rl.DrawRectanglePro(rl.NewRectangle(Gun2.Pos.X, Gun2.Pos.Y, Gun2.Width, Gun2.Height), rl.NewVector2(0, Gun2.Height/2), Gun2.Angle, rl.GetColor(0x555faaff))
+		// gun renderer ------------------------------------------------------------------------------------------------------------------
+		if Gun.Dir == 1 {
+			rl.DrawTextureEx(TextureGun, rl.NewVector2(Gun.Pos.X - 15, Gun.Pos.Y - 15), Gun.Angle, 2, rl.GetColor(0xffffffff))
+		}else {
+			rl.DrawTextureEx(TextureGunFlipped, rl.NewVector2(Gun.Pos.X + 15, Gun.Pos.Y + 45), Gun.Angle, 2, rl.GetColor(0xffffffff))
+		}
+		if Gun2.Dir == 1 {
+			rl.DrawTextureEx(TextureGun, rl.NewVector2(Gun2.Pos.X -15, Gun2.Pos.Y - 15), Gun2.Angle , 2, rl.GetColor(0xffffffff))
+		}else {
+			rl.DrawTextureEx(TextureGunFlipped, rl.NewVector2(Gun2.Pos.X +15, Gun2.Pos.Y + 45), Gun2.Angle, 2, rl.GetColor(0xffffffff))
+		}
+		//--------------------------------------------------------------------------------------------------------------------------------
+
+		rl.DrawRectangleLinesEx(rl.NewRectangle(Bean.Pos.X + (Bean.Width/2) - 100, Bean.Pos.Y - (Bean.Radius * 2) - 50, 200, 30), 10, rl.GetColor(0x000000ff))
+		rl.DrawRectangleV(rl.NewVector2(Bean.Pos.X + (Bean.Width/2) - 90, Bean.Pos.Y - (Bean.Radius*2) - 40), rl.NewVector2((180 * (Bean.Health/100)), 10), rl.GetColor(0x00ff00ff))
+
+		for i := float32(0); i < 180; i++ {
+			if Bean2.Pos.X + (Bean2.Width/2) + 90 + i > Bean2.Pos.X + (Bean2.Width/2) + 90 {
+				width = i
+			}else {
+				continue
+			}
+		}
+		rl.DrawRectangleLinesEx(rl.NewRectangle(Bean2.Pos.X + (Bean2.Width/2) - 100, Bean2.Pos.Y - (Bean2.Radius * 2) - 50, 200, 30), 10, rl.GetColor(0x000000ff))
+		rl.DrawRectangleV(rl.NewVector2((Bean2.Pos.X + (Bean2.Width/2) - 90) * (Bean2.Health/100), Bean2.Pos.Y - (Bean2.Radius * 2) - 40), rl.NewVector2(width, 10), rl.GetColor(0x00ff00ff))
 			
 		rl.EndMode2D()
 
 		rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v\nCrouched: %v\nGun Angle: %0.1f\nGun2 Angle: %0.1f",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded, Bean.isCrouched, Gun.Angle, Gun2.Angle), 10, 10, 30, rl.GetColor(0xffffffff))
 		
 		rl.EndDrawing()
+
 	}
 }

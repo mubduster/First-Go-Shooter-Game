@@ -160,3 +160,15 @@ func CheckBarrelPos (Gun *gun, Map Map, Platforms []Platform) {
 	}
 }
 //-------------------------------------------------------------------------------------------------------------------------------
+
+// Check for Hit ----------------------------------------------------------------------------------------------------------------
+func CheckBulletPlayerCollision (Bullet *bullet, Bean *bean) {
+	if rl.CheckCollisionCircleRec(Bullet.Pos, Bullet.Radius, rl.NewRectangle(Bean.Pos.X, Bean.Pos.Y, Bean.Width, Bean.Height)) {
+		Bean.Health -= Bullet.Damage
+		Bullet.Time = 0
+	}else if rl.CheckCollisionCircles(Bullet.Pos, Bullet.Radius, rl.NewVector2(Bean.Pos.X + (Bean.Width/2), Bean.Pos.Y - Bean.Radius), Bean.Radius) {
+		Bean.Health -= Bullet.Damage * 1.5
+		Bullet.Time = 0
+	}
+}
+//-------------------------------------------------------------------------------------------------------------------------------
