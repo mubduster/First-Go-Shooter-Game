@@ -20,7 +20,6 @@ func NewBullets (g gun) bullet {
 		Radius: BulletCollisionRadius,
 		Speed: rl.NewVector2( float32( Math.Cos(float64(Radians))) * BulletSpeed, float32(Math.Sin(float64(Radians))) * BulletSpeed),
 		Damage: BulletDamage,
-		Alive: true,
 		Time: BulletLifeSpan,
 	}
 }

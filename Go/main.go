@@ -34,6 +34,7 @@ type bean struct {
 	CurrentPlatformIndex int
 	restingOnPlatform bool
 	Health float32
+	Lives int
 	PowersNumber int
 	PowerDuration float32
 }
@@ -48,6 +49,8 @@ type gun struct {
 	Shots int
 	CanShoot bool
 	Delay float32
+	Reloading bool
+	ReloadDelay float32	
 	Barrel rl.Vector2
 }
 type bullet struct{
@@ -57,7 +60,6 @@ type bullet struct{
 	Radius float32
 	Speed rl.Vector2
 	Damage float32
-	Alive bool
 	Time float32
 }
 type gravity struct {
@@ -114,6 +116,8 @@ var Timer float32
 var Minutes float32
 var Hour float32
 var FPS int32
+
+var Pause bool
 
 const epsilon float32 = 2.5
 
@@ -212,11 +216,11 @@ func main() {
 		{Rect: rl.NewRectangle(3425, 1000, 485, 100)},
 	}
 	
-	Bean := bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
-	Bean2 := bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
+	Bean := bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: 3}
+	Bean2 := bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: 3}
 	
-	Gun := gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
-	Gun2 := gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+	Gun := gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15}
+	Gun2 := gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15}
 
 	Bullets := []bullet{}
 
@@ -230,11 +234,20 @@ func main() {
 	TextureBullet := rl.LoadTexture("./Textures/Bullet.png")  //Bullet center 9,9 and size 18,18
 	TextureGun := rl.LoadTexture("./Textures/Gun.png")
 	TextureGunFlipped := rl.LoadTexture("./Textures/Gun_flipped.png")
+	TextureAmmoContainer := rl.LoadTexture("./Textures/Ammo_Container.png")
+	TextureAmmo := rl.LoadTexture("./Textures/Ammo.png")
+	TextureHeart := rl.LoadTexture("./Textures/Heart.png")
 	
 	for !rl.WindowShouldClose(){
 
 		dT := rl.GetFrameTime()  // Delta Time for allowing the game to run at any FPS and framerate
 		FPS = rl.GetFPS()
+
+		if rl.IsKeyPressed(rl.KeySpace) {
+			Pause = !Pause
+		}
+
+		if !Pause {
 
 		// OneWay Collision Helper -------------------------------------------------------------------------------------------------------------------------------------------------
 		if Bean.IgnoredCooldown > 0 {  // OneWay playform collision ignore timer countdown
@@ -586,7 +599,38 @@ func main() {
 		
 		CheckBarrelPos(&Gun, Map, Platforms)
 
+		Gun.Reloading = false
+
+		if rl.IsKeyDown(rl.KeyR) {
+			Gun.Reloading = true
+		}
+		
+		if Gun.ReloadDelay > 0 {
+			Gun.ReloadDelay -= dT
+			Gun.Shots = 1
+		}else {
+			if Gun.Delay > 0 {
+				Gun.Delay -= dT
+			}
+		}
+
+		if Gun.Delay <= 0 {
+			if Gun.Shots < Gun.Mag + 1 && !Gun.Reloading {
+				Gun.CanShoot = true
+				Gun.Delay = 0.25
+				}else {
+					Gun.Reloading = true
+					Gun.Shots = 1
+				}
+		}
+			
+		if Gun.Reloading {
+			Gun.ReloadDelay = 1.5
+		}
+			
 		if rl.IsKeyDown(rl.KeyF) && Gun.CanShoot{
+			Gun.CanShoot = false
+			Gun.Shots++
 			Bullets = append(Bullets, NewBullets(Gun))
 		}
 		//-------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -683,9 +727,11 @@ func main() {
 		// Health Bar --------------------------------------------------------------------------------------------------------------------------------------------------------------
 		if Bean.Health <= 0 {
 			Bean.Health = 0
+			Bean.Lives -= 1
 		}
 		if Bean2.Health <= 0 {
 			Bean2.Health = 0
+			Bean2.Lives -= 1
 		}
 		width = float32(180) * (Bean2.Health/100)
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -701,6 +747,7 @@ func main() {
 			Minutes = 0
 		}
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		}
 
 		rl.BeginDrawing()
 
@@ -771,26 +818,56 @@ func main() {
 		rl.EndMode2D()
 
 		// rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v\nCrouched: %v\nGun Angle: %0.1f\nGun2 Angle: %0.1f",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded, Bean.isCrouched, Gun.Angle, Gun2.Angle), 10, 10, 30, rl.GetColor(0xffffffff))
-		rl.DrawText(fmt.Sprintf("FPS: %v", FPS), 30, 30, 30, rl.White)
 
+		// Info Tablet ---------------------------------------------------------------------------------------------------------------------
+		rl.DrawRectanglePro(rl.NewRectangle(-10, Screen.Y/2, 260, 500), rl.NewVector2(0,0), 0.0, rl.Blue)
+		rl.DrawRectangleLinesEx(rl.NewRectangle(-10, (Screen.Y/2) - 15, 275, 500), 15, rl.Black)
+		
+		rl.DrawTextureEx(TextureAmmoContainer, rl.NewVector2(10, Screen.Y - 250), 0.0, 6, rl.White)
+		rl.DrawTextureEx(TextureAmmo, rl.NewVector2(100, Screen.Y - 220), 0.0, 6, rl.White)
+		rl.DrawText(fmt.Sprintf(": %d", Gun.Mag - Gun.Shots + 1), 160, int32(Screen.Y)- 210, 60, rl.White)
+		
+		rl.DrawTextureEx(TextureHeart, rl.NewVector2(10, Screen.Y - 390), 0.0, 6, rl.White)
+		rl.DrawText(fmt.Sprintf(": %d",Bean.Lives), 160, int32(Screen.Y) - 360, 60, rl.White)
+
+		rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 240, Screen.Y/2, 260, 500), rl.NewVector2(0,0), 0.0,rl.Red)
+		rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 255, Screen.Y/2, 280, 500), 15, rl.Black)
+
+		rl.DrawTextureEx(TextureAmmoContainer, rl.NewVector2(Screen.X - 100, Screen.Y - 250), 0.0, 6, rl.White)
+
+		//-----------------------------------------------------------------------------------------------------------------------------------
+		// Score tab ------------------------------------------------------------------------------------------------------------------------
 		rl.DrawRectanglePro(rl.NewRectangle(-10, Screen.Y - 120, 740, 200), rl.NewVector2(0,0), 0.0, rl.Blue)
 		rl.DrawRectangleLinesEx(rl.NewRectangle(-10, Screen.Y - 130, 750, 200), 15, rl.Black)
 		rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 740, Screen.Y - 120, 740, 200), rl.NewVector2(0, 0), 0.0, rl.Red)
 		rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 750, Screen.Y - 130, 790, 200), 15, rl.Black)
-
+		
 		rl.DrawText(fmt.Sprintf("Score Player1: %d",ScoreP1), 30, int32(Screen.Y - 100), 80, rl.GetColor(0xffffffff))
 		rl.DrawText(fmt.Sprintf("Score Player2: %d", ScoreP2), int32(Screen.X - 710), int32(Screen.Y - 100), 80, rl.GetColor(0xffffffff))
-
+		//-----------------------------------------------------------------------------------------------------------------------------------
+		// Timer and FPS --------------------------------------------------------------------------------------------------------------------
 		rl.DrawText(fmt.Sprintf("%0.0f:%0.0f:%0.01f", Hour, Minutes, Timer), int32(Screen.X/2) - 44, 30, 40, rl.GetColor(0xffffffff))
+		rl.DrawText(fmt.Sprintf("FPS: %v", FPS), 30, 30, 30, rl.White)
+		//-----------------------------------------------------------------------------------------------------------------------------------
+		if Pause {
+			rl.DrawRectanglePro(rl.NewRectangle(0, 0, Screen.X, Screen.Y), rl.NewVector2(0, 0), 0.0, rl.GetColor(0x44444488))
+			rl.DrawText(fmt.Sprintf("FPS: %v", FPS), 30, 30, 30, rl.White)
+
+			rl.DrawText(fmt.Sprint("PAUSED"), int32(Screen.X/2)- 170, int32(Screen.Y/2) - 61, 80, rl.GetColor(0x000000ff))
+			rl.DrawText(fmt.Sprint("PAUSED"), int32(Screen.X/2) - 165, int32(Screen.Y/2) - 65, 80, rl.Red)
+
+			rl.DrawText(fmt.Sprint("Press Space to Continue"), int32(Screen.X/2)- 339, int32(Screen.Y/2) + 13, 50, rl.Black)
+			rl.DrawText(fmt.Sprint("Press Space to Continue"), int32(Screen.X/2) - 335, int32(Screen.Y/2) + 10, 50, rl.Red)
+		}
 
 		rl.EndDrawing()
 
 		if Bean.Health <= 0 {
 			ScoreP2 += 1
-			Bean = bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
-			Bean2 = bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
-			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
-			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+			Bean = bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean.Lives}
+			Bean2 = bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean2.Lives}
+			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15}
+			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15}
 			Bullets = []bullet{}
 			Timer = 0.0
 			Minutes = 0.0
@@ -798,10 +875,10 @@ func main() {
 		}
 		if Bean2.Health <= 0 {
 			ScoreP1 += 1
-			Bean = bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
-			Bean2 = bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
-			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
-			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+			Bean = bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean.Lives}
+			Bean2 = bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean2.Lives}
+			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15}
+			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15}
 			Bullets = []bullet{}
 			Timer = 0.0
 			Minutes = 0.0
