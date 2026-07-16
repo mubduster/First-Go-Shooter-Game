@@ -708,6 +708,7 @@ func main() {
 
 		
 		rl.BeginMode2D(Camera)
+
 		rl.DrawRectangle(3000, 3000, 500, 500, rl.GetColor(0xff0000ff))
 		
 		rl.DrawRectanglePro(Map.Border, rl.NewVector2(0,0), 0.0, rl.GetColor(0x999999ff))
@@ -726,6 +727,7 @@ func main() {
 			// rl.DrawCircleV(b.Pos, b.Radius, rl.GetColor(0xff0000ff))
 		}
 		
+		// Beans renderer ----------------------------------------------------------------------------------------------------------------
 		rl.DrawRectangleV(Bean.Pos, rl.NewVector2(Bean.Width, Bean.Height), rl.GetColor(0x00ffffff))
 		Bean.Pos.X += Bean.Width/2
 		Bean.Pos.Y -= 19
@@ -745,6 +747,7 @@ func main() {
 		}else {
 			rl.DrawTextureV(TextureCrouch, rl.NewVector2(Bean.Pos.X, Bean.Pos.Y - (Bean.Radius*2)), rl.GetColor(0xffffffff))
 		}
+		//--------------------------------------------------------------------------------------------------------------------------------
 
 		// gun renderer ------------------------------------------------------------------------------------------------------------------
 		if Gun.Dir == 1 {
@@ -788,6 +791,7 @@ func main() {
 			Bean2 = bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
 			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
 			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+			Bullets = []bullet{}
 			Timer = 0.0
 			Minutes = 0.0
 			Hour = 0.0
@@ -798,6 +802,7 @@ func main() {
 			Bean2 = bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
 			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
 			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+			Bullets = []bullet{}
 			Timer = 0.0
 			Minutes = 0.0
 			Hour = 0.0
