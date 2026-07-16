@@ -144,7 +144,7 @@ func CheckBarrelPos (Gun *gun, Map Map, Platforms []Platform) {
 			}
 
 			const padding float32 = 8
-			Rect := rl.NewRectangle(p.Rect.X, p.Rect.Y - padding, p.Rect.Width, p.Rect.Height + padding)
+			Rect := rl.NewRectangle(p.Rect.X - padding, p.Rect.Y - padding, p.Rect.Width + padding, p.Rect.Height + padding)
 
 			if rl.CheckCollisionPointRec(point, Rect) {
 				blocked = true

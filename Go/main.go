@@ -108,6 +108,12 @@ var Platforms []Platform
 var colorOneWay rl.Color = rl.GetColor(0x444444ff)
 var colorSolid rl.Color = rl.GetColor(0x000000ff) 
 var width float32
+var ScoreP1 int 
+var ScoreP2 int
+var Timer float32 
+var Minutes float32
+var Hour float32
+var FPS int32
 
 const epsilon float32 = 2.5
 
@@ -228,6 +234,7 @@ func main() {
 	for !rl.WindowShouldClose(){
 
 		dT := rl.GetFrameTime()  // Delta Time for allowing the game to run at any FPS and framerate
+		FPS = rl.GetFPS()
 
 		// OneWay Collision Helper -------------------------------------------------------------------------------------------------------------------------------------------------
 		if Bean.IgnoredCooldown > 0 {  // OneWay playform collision ignore timer countdown
@@ -658,6 +665,8 @@ func main() {
 				resolveMapBulletCollision(Platforms, &Bullets[Bullet])
 
 				CheckBulletPlayerCollision(&Bullets[Bullet], &Bean)
+				CheckBulletPlayerCollision(&Bullets[Bullet], &Bean2)
+
 				if Bullets[Bullet].Time <= 0 {
 					Bullets[Bullet] = Bullets[len(Bullets)-1]
 					Bullets = Bullets[:len(Bullets)-1]
@@ -672,19 +681,36 @@ func main() {
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 		// Health Bar --------------------------------------------------------------------------------------------------------------------------------------------------------------
-		if Bean.Health < 0 {
+		if Bean.Health <= 0 {
 			Bean.Health = 0
+		}
+		if Bean2.Health <= 0 {
+			Bean2.Health = 0
+		}
+		width = float32(180) * (Bean2.Health/100)
+		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+		// Timer worker -------------------------------------------------------------------------------------------------------------------------------------------------------------
+		Timer += dT
+		if Timer >= 60.0 {
+			Minutes += 1
+			Timer = 0
+		}
+		if Minutes >= 60 {
+			Hour += 1
+			Minutes = 0
 		}
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 		rl.BeginDrawing()
 
-		rl.ClearBackground(rl.GetColor(0x0034a9ff))
+		rl.ClearBackground(rl.GetColor(0x444444ff))
 
 		
 		rl.BeginMode2D(Camera)
 		rl.DrawRectangle(3000, 3000, 500, 500, rl.GetColor(0xff0000ff))
 		
+		rl.DrawRectanglePro(Map.Border, rl.NewVector2(0,0), 0.0, rl.GetColor(0x999999ff))
 		rl.DrawRectangleLinesEx(Map.Border, 30, rl.GetColor(0x000000ff))
 		
 		for _, p := range Platforms {
@@ -707,10 +733,10 @@ func main() {
 		Bean.Pos.X -= Bean.Width/2
 		Bean.Pos.Y += 19
 
-		rl.DrawRectangleV(Bean2.Pos, rl.NewVector2(Bean2.Width, Bean2.Height), rl.GetColor(0x00ffffff))
+		rl.DrawRectangleV(Bean2.Pos, rl.NewVector2(Bean2.Width, Bean2.Height), rl.GetColor(0xff0000ff))
 		Bean2.Pos.X += Bean2.Width/2
 		Bean2.Pos.Y -= 19
-		rl.DrawCircleV(Bean2.Pos, Bean2.Radius, rl.GetColor(0x00ffffff))
+		rl.DrawCircleV(Bean2.Pos, Bean2.Radius, rl.GetColor(0xffffffff))
 		Bean2.Pos.X -= Bean2.Width/2
 		Bean2.Pos.Y += 19
 		
@@ -736,21 +762,45 @@ func main() {
 		rl.DrawRectangleLinesEx(rl.NewRectangle(Bean.Pos.X + (Bean.Width/2) - 100, Bean.Pos.Y - (Bean.Radius * 2) - 50, 200, 30), 10, rl.GetColor(0x000000ff))
 		rl.DrawRectangleV(rl.NewVector2(Bean.Pos.X + (Bean.Width/2) - 90, Bean.Pos.Y - (Bean.Radius*2) - 40), rl.NewVector2((180 * (Bean.Health/100)), 10), rl.GetColor(0x00ff00ff))
 
-		for i := float32(0); i < 180; i++ {
-			if Bean2.Pos.X + (Bean2.Width/2) + 90 + i > Bean2.Pos.X + (Bean2.Width/2) + 90 {
-				width = i
-			}else {
-				continue
-			}
-		}
 		rl.DrawRectangleLinesEx(rl.NewRectangle(Bean2.Pos.X + (Bean2.Width/2) - 100, Bean2.Pos.Y - (Bean2.Radius * 2) - 50, 200, 30), 10, rl.GetColor(0x000000ff))
-		rl.DrawRectangleV(rl.NewVector2((Bean2.Pos.X + (Bean2.Width/2) - 90) * (Bean2.Health/100), Bean2.Pos.Y - (Bean2.Radius * 2) - 40), rl.NewVector2(width, 10), rl.GetColor(0x00ff00ff))
+		rl.DrawRectangleV(rl.NewVector2(Bean2.Pos.X + (Bean2.Width/2) - 90 + (180 - width), Bean2.Pos.Y - (Bean2.Radius * 2) - 40), rl.NewVector2(width, 10), rl.GetColor(0x00ff00ff))
 			
 		rl.EndMode2D()
 
-		rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v\nCrouched: %v\nGun Angle: %0.1f\nGun2 Angle: %0.1f",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded, Bean.isCrouched, Gun.Angle, Gun2.Angle), 10, 10, 30, rl.GetColor(0xffffffff))
-		
+		// rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v\nCrouched: %v\nGun Angle: %0.1f\nGun2 Angle: %0.1f",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded, Bean.isCrouched, Gun.Angle, Gun2.Angle), 10, 10, 30, rl.GetColor(0xffffffff))
+		rl.DrawText(fmt.Sprintf("FPS: %v", FPS), 30, 30, 30, rl.White)
+
+		rl.DrawRectanglePro(rl.NewRectangle(-10, Screen.Y - 120, 740, 200), rl.NewVector2(0,0), 0.0, rl.Blue)
+		rl.DrawRectangleLinesEx(rl.NewRectangle(-10, Screen.Y - 130, 750, 200), 15, rl.Black)
+		rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 740, Screen.Y - 120, 740, 200), rl.NewVector2(0, 0), 0.0, rl.Red)
+		rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 750, Screen.Y - 130, 790, 200), 15, rl.Black)
+
+		rl.DrawText(fmt.Sprintf("Score Player1: %d",ScoreP1), 30, int32(Screen.Y - 100), 80, rl.GetColor(0xffffffff))
+		rl.DrawText(fmt.Sprintf("Score Player2: %d", ScoreP2), int32(Screen.X - 710), int32(Screen.Y - 100), 80, rl.GetColor(0xffffffff))
+
+		rl.DrawText(fmt.Sprintf("%0.0f:%0.0f:%0.01f", Hour, Minutes, Timer), int32(Screen.X/2) - 44, 30, 40, rl.GetColor(0xffffffff))
+
 		rl.EndDrawing()
 
+		if Bean.Health <= 0 {
+			ScoreP2 += 1
+			Bean = bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
+			Bean2 = bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
+			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+			Timer = 0.0
+			Minutes = 0.0
+			Hour = 0.0
+		}
+		if Bean2.Health <= 0 {
+			ScoreP1 += 1
+			Bean = bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
+			Bean2 = bean{Pos:rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0,0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0}
+			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X + 25,  Bean.Pos.Y + 20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X - 25, Bean2.Pos.Y + 20), Width:  70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+			Timer = 0.0
+			Minutes = 0.0
+			Hour = 0.0
+		}
 	}
 }
