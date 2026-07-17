@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	Math "math"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -36,7 +37,6 @@ type bean struct {
 	Health float32
 	Lives int
 	PowersNumber int
-	PowerDuration float32
 }
 type gun struct {
 	Dir int
@@ -95,13 +95,22 @@ type power struct {
 	Health float32
 	Imune bool
 }
+type powerTextures struct {
+	FireRate rl.Texture2D
+	Damage rl.Texture2D
+	Reload rl.Texture2D
+	Mag rl.Texture2D
+	Health rl.Texture2D
+	Imune rl.Texture2D
+}
 type powerBox struct {
 	Power string
-	Pos rl.Vector2
-	Width float32
-	Height float32
+	Pos rl.Rectangle
+}
+type powerDisplay struct {
+	Texture rl.Texture2D
 	Alive bool
-	Time float32
+	TimeLeft float32
 }
 
 var MapColl mapColl
@@ -228,6 +237,10 @@ func main() {
 	
 	Camera := rl.Camera2D{Offset: rl.NewVector2(Screen.X/2, Screen.Y/2), Target: rl.NewVector2(World.X/2, World.Y/2), Rotation: 0.0, Zoom: 0.2}
 
+	Powers := []powerBox{}
+
+	Powers1 := []powerDisplay{}
+
 	TextureStand := rl.LoadTexture("./Textures/model_player.png")
 	TextureCrouch := rl.LoadTexture("./Textures/model_player_crouch.png")
 
@@ -237,6 +250,10 @@ func main() {
 	TextureAmmoContainer := rl.LoadTexture("./Textures/Ammo_Container.png")
 	TextureAmmo := rl.LoadTexture("./Textures/Ammo.png")
 	TextureHeart := rl.LoadTexture("./Textures/Heart.png")
+
+	PowerTexture := powerTextures{Health: rl.LoadTexture("./Textures/PowerHealth.png")}
+
+	Powers = append(Powers, powerBox{Power: "Health", Pos: rl.NewRectangle(200, Screen.Y - 100, 50, 50)})
 	
 	for !rl.WindowShouldClose(){
 
@@ -763,6 +780,23 @@ func main() {
 
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+		// Powers Handler ----------------------------------------------------------------------------------------------------------------------------------------------------------
+		if rl.CheckCollisionRecs(rl.NewRectangle(Bean.Pos.X, Bean.Pos.Y, Bean.Width, Bean.Height), Powers[0].Pos) {
+			switch Powers[0].Power {
+			case "Health" :
+				Powers1 = append(Powers1, powerDisplay{Texture: PowerTexture.Health, Alive: true, TimeLeft: 10.0})
+			}
+		}
+		for i,P := range Powers1 {
+			if P.TimeLeft <= 0 {
+				Powers1[i] = Powers1[len(Powers1)-1]
+				Powers1 = Powers1[:len(Bullets)-1]
+			}else {
+				P.TimeLeft -= dT
+			}
+		}
+		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 		// Health Bar --------------------------------------------------------------------------------------------------------------------------------------------------------------
 		if Bean.Health <= 0 {
 			Bean.Health = 0
@@ -858,7 +892,9 @@ func main() {
 
 		// rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v\nCrouched: %v\nGun Angle: %0.1f\nGun2 Angle: %0.1f",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded, Bean.isCrouched, Gun.Angle, Gun2.Angle), 10, 10, 30, rl.GetColor(0xffffffff))
 
-		// Info Tablet ---------------------------------------------------------------------------------------------------------------------
+		// Info Tablet -------------------------------------------------------------------------------------------------------------------------
+
+		// Table P1 ---------------------------------------------------------------------------------------------------------------------
 		rl.DrawRectanglePro(rl.NewRectangle(-10, Screen.Y/2, 260, 500), rl.NewVector2(0,0), 0.0, rl.Blue)
 		rl.DrawRectangleLinesEx(rl.NewRectangle(-10, (Screen.Y/2) - 15, 275, 500), 15, rl.Black)
 		rl.DrawRectanglePro(rl.NewRectangle(-10, (Screen.Y/2) + 400, 260, 20), rl.NewVector2(0,0), 0.0, rl.GetColor(0x00000066))
@@ -870,6 +906,28 @@ func main() {
 		rl.DrawTextureEx(TextureHeart, rl.NewVector2(10, Screen.Y - 390), 0.0, 6, rl.White)
 		rl.DrawText(fmt.Sprintf(": %d",Bean.Lives), 160, int32(Screen.Y) - 360, 60, rl.White)
 
+		for _,P := range Powers {
+	
+		}
+
+		BeanPPos1 := rl.NewVector2(10, Screen.Y/2 + 30)
+
+		for _,P := range Powers1 {
+			if P.TimeLeft > 0 {
+				rl.DrawTextureEx(P.Texture, BeanPPos1 , 0.0, 1.5, rl.White)
+			}
+			
+		}
+		// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(10, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+		rl.DrawRectangleLinesEx(rl.NewRectangle(10,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+		rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(94, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+		rl.DrawRectangleLinesEx(rl.NewRectangle(94,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+		rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(178, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+		rl.DrawRectangleLinesEx(rl.NewRectangle(178, Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+
+		//-------------------------------------------------------------------------------------------------------------------------------
+
+		//Table P2 ----------------------------------------------------------------------------------------------------------------------
 		rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 260, Screen.Y/2, 260, 500), rl.NewVector2(0,0), 0.0,rl.Red)
 		rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 265, Screen.Y/2, 280, 500), 15, rl.Black)
 		rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 255, Screen.Y/2 + 400, 280, 20), rl.NewVector2(0,0), 0.0, rl.GetColor(0x00000066))
@@ -880,8 +938,10 @@ func main() {
 
 		rl.DrawTextureEx(TextureHeart, rl.NewVector2(Screen.X - 130, Screen.Y - 390), 0.0, 6, rl.White)
 		rl.DrawText(fmt.Sprintf("%d :", Bean2.Lives), int32(Screen.X) - 230, int32(Screen.Y) - 360, 60, rl.White)
+		//-------------------------------------------------------------------------------------------------------------------------------
 
-		//-----------------------------------------------------------------------------------------------------------------------------------
+		//---------------------------------------------------------------------------------------------------------------------------------------
+
 		// Score tab ------------------------------------------------------------------------------------------------------------------------
 		rl.DrawRectanglePro(rl.NewRectangle(-10, Screen.Y - 120, 740, 200), rl.NewVector2(0,0), 0.0, rl.Blue)
 		rl.DrawRectangleLinesEx(rl.NewRectangle(-10, Screen.Y - 130, 750, 200), 15, rl.Black)
@@ -889,12 +949,14 @@ func main() {
 		rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 750, Screen.Y - 130, 790, 200), 15, rl.Black)
 		
 		rl.DrawText(fmt.Sprintf("Score Player1: %d",ScoreP1), 30, int32(Screen.Y - 100), 80, rl.GetColor(0xffffffff))
-		rl.DrawText(fmt.Sprintf("Score Player2: %d", ScoreP2), int32(Screen.X - 710), int32(Screen.Y - 100), 80, rl.GetColor(0xffffffff))
+		rl.DrawText(fmt.Sprintf("%d :Score Player2", ScoreP2), int32(Screen.X - 710), int32(Screen.Y - 100), 80, rl.GetColor(0xffffffff))
 		//-----------------------------------------------------------------------------------------------------------------------------------
+
 		// Timer and FPS --------------------------------------------------------------------------------------------------------------------
 		rl.DrawText(fmt.Sprintf("%0.0f:%0.0f:%0.01f", Hour, Minutes, Timer), int32(Screen.X/2) - 44, 30, 40, rl.GetColor(0xffffffff))
 		rl.DrawText(fmt.Sprintf("FPS: %v", FPS), 30, 30, 30, rl.White)
 		//-----------------------------------------------------------------------------------------------------------------------------------
+
 		if Pause {
 			rl.DrawRectanglePro(rl.NewRectangle(0, 0, Screen.X, Screen.Y), rl.NewVector2(0, 0), 0.0, rl.GetColor(0x44444488))
 			rl.DrawText(fmt.Sprintf("FPS: %v", FPS), 30, 30, 30, rl.White)
