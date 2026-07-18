@@ -82,35 +82,33 @@ type mapColl struct {
 	Floor bool
 	Floor2 bool
 }
-type power struct {
-	NFirerate float32
-	FireRate float32
-	NDamage float32
-	Damage float32
-	NReload float32
-	Reload	float32
-	NMag float32
-	Mag float32
-	NHealth float32
-	Health float32
-	Imune bool
-}
-type powerTextures struct {
-	FireRate rl.Texture2D
-	Damage rl.Texture2D
-	Reload rl.Texture2D
-	Mag rl.Texture2D
-	Health rl.Texture2D
-	Imune rl.Texture2D
-}
-type powerBox struct {
-	Power string
-	Pos rl.Rectangle
-}
-type powerDisplay struct {
+// type power struct {
+// 	NFirerate float32
+// 	FireRate float32
+// 	NDamage float32
+// 	Damage float32
+// 	NReload float32
+// 	Reload	float32
+// 	NMag float32
+// 	Mag float32
+// 	NHealth float32
+// 	Health float32
+// 	Imune bool
+// }
+type powerUpData struct {
+	Type int
+	Weight int
+	Duration float32
 	Texture rl.Texture2D
-	Alive bool
-	TimeLeft float32
+}
+type PowerUp struct {
+	Type int
+	Pos rl.Vector2
+	SpawnIndex int
+}
+type spawnPoints struct {
+	Pos rl.Vector2
+	Occupied bool
 }
 
 var MapColl mapColl
@@ -126,9 +124,20 @@ var Minutes float32
 var Hour float32
 var FPS int32
 
+var Start bool
+
 var Pause bool
 
 const epsilon float32 = 2.5
+
+const (
+	PUHealth = iota
+	PUFirerate
+	PUDamage
+	PUReload
+	PUMag
+	PUImune
+)
 
 func main() {
 	rl.SetConfigFlags(rl.FlagWindowResizable | rl.FlagWindowMaximized)
@@ -237,9 +246,14 @@ func main() {
 	
 	Camera := rl.Camera2D{Offset: rl.NewVector2(Screen.X/2, Screen.Y/2), Target: rl.NewVector2(World.X/2, World.Y/2), Rotation: 0.0, Zoom: 0.2}
 
-	Powers := []powerBox{}
+	// spawnPoints = []spawnPoints{
+	// 	{Pos: rl.NewVector2(200, 300), Occupied: false},
+	// 	{Pos: rl.NewVector2(100, 300), Occupied: false},
+	// }
 
-	Powers1 := []powerDisplay{}
+	// PowerUps := []powerUpData{
+	// 	{Type: PUHealth, Weight: 25, Duration: 0.001, Texture: rl.LoadTexture("./Textures/Powers/PowerHealth.png")},
+	// }
 
 	TextureStand := rl.LoadTexture("./Textures/model_player.png")
 	TextureCrouch := rl.LoadTexture("./Textures/model_player_crouch.png")
@@ -251,14 +265,15 @@ func main() {
 	TextureAmmo := rl.LoadTexture("./Textures/Ammo.png")
 	TextureHeart := rl.LoadTexture("./Textures/Heart.png")
 
-	PowerTexture := powerTextures{Health: rl.LoadTexture("./Textures/PowerHealth.png")}
+	Start = false
 
-	Powers = append(Powers, powerBox{Power: "Health", Pos: rl.NewRectangle(200, Screen.Y - 100, 50, 50)})
-	
+
 	for !rl.WindowShouldClose(){
 
 		dT := rl.GetFrameTime()  // Delta Time for allowing the game to run at any FPS and framerate
 		FPS = rl.GetFPS()
+
+		if Start {
 
 		if rl.IsKeyPressed(rl.KeySpace) {
 			Pause = !Pause
@@ -780,21 +795,8 @@ func main() {
 
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-		// Powers Handler ----------------------------------------------------------------------------------------------------------------------------------------------------------
-		if rl.CheckCollisionRecs(rl.NewRectangle(Bean.Pos.X, Bean.Pos.Y, Bean.Width, Bean.Height), Powers[0].Pos) {
-			switch Powers[0].Power {
-			case "Health" :
-				Powers1 = append(Powers1, powerDisplay{Texture: PowerTexture.Health, Alive: true, TimeLeft: 10.0})
-			}
-		}
-		for i,P := range Powers1 {
-			if P.TimeLeft <= 0 {
-				Powers1[i] = Powers1[len(Powers1)-1]
-				Powers1 = Powers1[:len(Bullets)-1]
-			}else {
-				P.TimeLeft -= dT
-			}
-		}
+		// Power Ups Handler -------------------------------------------------------------------------------------------------------------------------------------------------------
+		// replace with code for Power Ups Handler lol, this got a bit difficult so i doing menus first.
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 		// Health Bar --------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -822,7 +824,11 @@ func main() {
 		//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		}
 
+	}
+
 		rl.BeginDrawing()
+
+		if Start {
 
 		rl.ClearBackground(rl.GetColor(0x444444ff))
 
@@ -906,24 +912,12 @@ func main() {
 		rl.DrawTextureEx(TextureHeart, rl.NewVector2(10, Screen.Y - 390), 0.0, 6, rl.White)
 		rl.DrawText(fmt.Sprintf(": %d",Bean.Lives), 160, int32(Screen.Y) - 360, 60, rl.White)
 
-		for _,P := range Powers {
-	
-		}
-
-		BeanPPos1 := rl.NewVector2(10, Screen.Y/2 + 30)
-
-		for _,P := range Powers1 {
-			if P.TimeLeft > 0 {
-				rl.DrawTextureEx(P.Texture, BeanPPos1 , 0.0, 1.5, rl.White)
-			}
-			
-		}
 		// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(10, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
-		rl.DrawRectangleLinesEx(rl.NewRectangle(10,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
-		rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(94, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
-		rl.DrawRectangleLinesEx(rl.NewRectangle(94,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
-		rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(178, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
-		rl.DrawRectangleLinesEx(rl.NewRectangle(178, Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+		// rl.DrawRectangleLinesEx(rl.NewRectangle(10,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+		// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(94, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+		// rl.DrawRectangleLinesEx(rl.NewRectangle(94,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+		// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(178, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+		// rl.DrawRectangleLinesEx(rl.NewRectangle(178, Screen.Y/2 + 100, 67, 20), 5, rl.Black)
 
 		//-------------------------------------------------------------------------------------------------------------------------------
 
@@ -961,13 +955,50 @@ func main() {
 			rl.DrawRectanglePro(rl.NewRectangle(0, 0, Screen.X, Screen.Y), rl.NewVector2(0, 0), 0.0, rl.GetColor(0x44444488))
 			rl.DrawText(fmt.Sprintf("FPS: %v", FPS), 30, 30, 30, rl.White)
 
-			rl.DrawText(fmt.Sprint("PAUSED"), int32(Screen.X/2)- 170, int32(Screen.Y/2) - 61, 80, rl.GetColor(0x000000ff))
-			rl.DrawText(fmt.Sprint("PAUSED"), int32(Screen.X/2) - 165, int32(Screen.Y/2) - 65, 80, rl.Red)
+			rl.DrawText("PAUSED", int32(Screen.X/2)- 170, int32(Screen.Y/2) - 61, 80, rl.GetColor(0x000000ff))
+			rl.DrawText("PAUSED", int32(Screen.X/2) - 165, int32(Screen.Y/2) - 65, 80, rl.Red)
 
-			rl.DrawText(fmt.Sprint("Press Space to Continue"), int32(Screen.X/2)- 339, int32(Screen.Y/2) + 13, 50, rl.Black)
-			rl.DrawText(fmt.Sprint("Press Space to Continue"), int32(Screen.X/2) - 335, int32(Screen.Y/2) + 10, 50, rl.Red)
+			rl.DrawText("Press Space to Continue", int32(Screen.X/2)- 339, int32(Screen.Y/2) + 13, 50, rl.Black)
+			rl.DrawText("Press Space to Continue", int32(Screen.X/2) - 335, int32(Screen.Y/2) + 10, 50, rl.Red)
 		}
 
+		}else {
+			rl.ClearBackground(rl.GetColor(0x333333ff))
+			rl.DrawText("Bouncing Betty 2 Player", int32(Screen.X/2) - 610, int32(Screen.Y/2) - 290, 100, rl.GetColor(0x000000ff))
+			rl.DrawText("Bouncing Betty 2 Player", int32(Screen.X/2) - 600, int32(Screen.Y/2) - 300, 100, rl.GetColor(0xff2222ff))
+
+			if !rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2, 300, 122)) { 
+				rl.DrawRectangle(int32(Screen.X/2) - 160, int32(Screen.Y/2), 300, 100, rl.GetColor(0x00ff44ff))
+				rl.DrawText("Start", int32(Screen.X/2) - 122, int32(Screen.Y/2) + 13, 80, rl.GetColor(0x222222ff))
+			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2, 300, 122)) && rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+				
+			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 -160, Screen.Y/2, 300, 122)) {
+				rl.DrawRectangle(int32(Screen.X/2) - 170, int32(Screen.Y/2) - 10 , 325, 130, rl.GetColor(0x00bb44ff))
+				rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X/2 - 180, Screen.Y/2 - 20, 345, 140), 10, rl.GetColor(0x000000ff))
+				rl.DrawText("Start", int32(Screen.X/2) - 145, int32(Screen.Y/2) + 5, 100, rl.GetColor(0xffffffff))
+			}
+
+			if !rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 +150, 300, 100)) {
+				rl.DrawRectangle(int32(Screen.X/2) - 160, int32(Screen.Y/2) + 150, 300, 100, rl.GetColor(0x1144ffff))
+				rl.DrawText("Controls", int32(Screen.X/2) - 155, int32(Screen.Y/2) + 168, 67, rl.GetColor(0x111111ff))
+			}else {
+				rl.DrawRectangle(int32(Screen.X/2) - 170, int32(Screen.Y/2) + 140, 320, 120, rl.GetColor(0x1144aaff))
+				rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X/2 - 180, Screen.Y/2 + 130, 340, 140), 10, rl.GetColor(0x000000ff))
+				rl.DrawText("Controls", int32(Screen.X/2) - 165, int32(Screen.Y/2) + 168, 70, rl.GetColor(0xffffffff))
+			}
+
+			if !rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 + 300, 300, 100)) {
+				rl.DrawRectangle(int32(Screen.X/2) - 160, int32(Screen.Y/2) + 300, 300, 100, rl.GetColor(0xff1111ff))
+				rl.DrawText("Quit", int32(Screen.X/2) - 90, int32(Screen.Y/2) + 313, 80, rl.GetColor(0x000000ff))
+			}else {
+				rl.DrawRectangle(int32(Screen.X/2) - 170, int32(Screen.Y/2) + 290, 320, 120, rl.GetColor(0xaa1111ff))
+				rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X/2 - 180, Screen.Y/2 + 280, 340, 140), 10, rl.GetColor(0x000000ff))
+				rl.DrawText("Quit", int32(Screen.X/2) - 105, int32(Screen.Y/2) + 305, 100, rl.GetColor(0xffffffff))
+			}
+
+
+		}
+		
 		rl.EndDrawing()
 
 		if Bean.Health <= 0 {
