@@ -125,6 +125,9 @@ var Hour float32
 var FPS int32
 
 var Start bool
+var Menu bool = true
+var Controls bool
+var Quit  bool
 
 var Pause bool
 
@@ -143,6 +146,8 @@ func main() {
 	rl.SetConfigFlags(rl.FlagWindowResizable | rl.FlagWindowMaximized)
 	rl.InitWindow(0, 0, "Go Shooter Game")
 	defer rl.CloseWindow()
+
+	rl.SetExitKey(rl.KeyNull)
 	
 	rl.SetTargetFPS(60)
 
@@ -828,175 +833,264 @@ func main() {
 
 		rl.BeginDrawing()
 
-		if Start {
+		if !Menu && Start{
 
-		rl.ClearBackground(rl.GetColor(0x444444ff))
+			rl.ClearBackground(rl.GetColor(0x444444ff))
 
-		
-		rl.BeginMode2D(Camera)
-
-		rl.DrawRectangle(3000, 3000, 500, 500, rl.GetColor(0xff0000ff))
-		
-		rl.DrawRectanglePro(Map.Border, rl.NewVector2(0,0), 0.0, rl.GetColor(0xAAAAAAff))
-		rl.DrawRectangleLinesEx(Map.Border, 30, rl.GetColor(0x000000ff))
-		
-		for _, p := range Platforms {
-			if p.OneWay == true{
-				rl.DrawRectangleRec(p.Rect, colorOneWay)
-			}else {
-				rl.DrawRectangleRec(p.Rect, colorSolid)
-			}
-		}
-
-		for _, b := range Bullets {
-			rl.DrawTexturePro(TextureBullet, rl.NewRectangle(0, 0, 18, 18), rl.NewRectangle(b.Pos.X, b.Pos.Y, 18, 18), rl.NewVector2(9,9), b.Angle, rl.GetColor(0xffffffff))
-			// rl.DrawCircleV(b.Pos, b.Radius, rl.GetColor(0xff0000ff))
-		}
-		
-		// Beans renderer ----------------------------------------------------------------------------------------------------------------
-		rl.DrawRectangleV(Bean.Pos, rl.NewVector2(Bean.Width, Bean.Height), rl.GetColor(0x00ffffff))
-		Bean.Pos.X += Bean.Width/2
-		Bean.Pos.Y -= 19
-		rl.DrawCircleV(Bean.Pos, Bean.Radius, rl.GetColor(0x00ffffff))
-		Bean.Pos.X -= Bean.Width/2
-		Bean.Pos.Y += 19
-
-		rl.DrawRectangleV(Bean2.Pos, rl.NewVector2(Bean2.Width, Bean2.Height), rl.GetColor(0xff0000ff))
-		Bean2.Pos.X += Bean2.Width/2
-		Bean2.Pos.Y -= 19
-		rl.DrawCircleV(Bean2.Pos, Bean2.Radius, rl.GetColor(0xffffffff))
-		Bean2.Pos.X -= Bean2.Width/2
-		Bean2.Pos.Y += 19
-		
-		if !Bean.isCrouched{
-			rl.DrawTextureV(TextureStand, rl.NewVector2(Bean.Pos.X, Bean.Pos.Y - (Bean.Radius*2)), rl.GetColor(0xffffffff))
-		}else {
-			rl.DrawTextureV(TextureCrouch, rl.NewVector2(Bean.Pos.X, Bean.Pos.Y - (Bean.Radius*2)), rl.GetColor(0xffffffff))
-		}
-		//--------------------------------------------------------------------------------------------------------------------------------
-
-		// gun renderer ------------------------------------------------------------------------------------------------------------------
-		if Gun.Dir == 1 {
-			rl.DrawTextureEx(TextureGun, rl.NewVector2(Gun.Pos.X - 15, Gun.Pos.Y - 15), Gun.Angle, 2, rl.GetColor(0xffffffff))
-		}else {
-			rl.DrawTextureEx(TextureGunFlipped, rl.NewVector2(Gun.Pos.X + 15, Gun.Pos.Y + 45), Gun.Angle, 2, rl.GetColor(0xffffffff))
-		}
-		if Gun2.Dir == 1 {
-			rl.DrawTextureEx(TextureGun, rl.NewVector2(Gun2.Pos.X -15, Gun2.Pos.Y - 15), Gun2.Angle , 2, rl.GetColor(0xffffffff))
-		}else {
-			rl.DrawTextureEx(TextureGunFlipped, rl.NewVector2(Gun2.Pos.X +15, Gun2.Pos.Y + 45), Gun2.Angle, 2, rl.GetColor(0xffffffff))
-		}
-		//--------------------------------------------------------------------------------------------------------------------------------
-
-		rl.DrawRectangleLinesEx(rl.NewRectangle(Bean.Pos.X + (Bean.Width/2) - 100, Bean.Pos.Y - (Bean.Radius * 2) - 50, 200, 30), 10, rl.GetColor(0x000000ff))
-		rl.DrawRectangleV(rl.NewVector2(Bean.Pos.X + (Bean.Width/2) - 90, Bean.Pos.Y - (Bean.Radius*2) - 40), rl.NewVector2((180 * (Bean.Health/100)), 10), rl.GetColor(0x00ff00ff))
-
-		rl.DrawRectangleLinesEx(rl.NewRectangle(Bean2.Pos.X + (Bean2.Width/2) - 100, Bean2.Pos.Y - (Bean2.Radius * 2) - 50, 200, 30), 10, rl.GetColor(0x000000ff))
-		rl.DrawRectangleV(rl.NewVector2(Bean2.Pos.X + (Bean2.Width/2) - 90 + (180 - width), Bean2.Pos.Y - (Bean2.Radius * 2) - 40), rl.NewVector2(width, 10), rl.GetColor(0x00ff00ff))
 			
-		rl.EndMode2D()
+			rl.BeginMode2D(Camera)
 
-		// rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v\nCrouched: %v\nGun Angle: %0.1f\nGun2 Angle: %0.1f",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded, Bean.isCrouched, Gun.Angle, Gun2.Angle), 10, 10, 30, rl.GetColor(0xffffffff))
+			rl.DrawRectangle(3000, 3000, 500, 500, rl.GetColor(0xff0000ff))
+			
+			rl.DrawRectanglePro(Map.Border, rl.NewVector2(0,0), 0.0, rl.GetColor(0xAAAAAAff))
+			rl.DrawRectangleLinesEx(Map.Border, 30, rl.GetColor(0x000000ff))
+			
+			for _, p := range Platforms {
+				if p.OneWay == true{
+					rl.DrawRectangleRec(p.Rect, colorOneWay)
+				}else {
+					rl.DrawRectangleRec(p.Rect, colorSolid)
+				}
+			}
 
-		// Info Tablet -------------------------------------------------------------------------------------------------------------------------
+			for _, b := range Bullets {
+				rl.DrawTexturePro(TextureBullet, rl.NewRectangle(0, 0, 18, 18), rl.NewRectangle(b.Pos.X, b.Pos.Y, 18, 18), rl.NewVector2(9,9), b.Angle, rl.GetColor(0xffffffff))
+				// rl.DrawCircleV(b.Pos, b.Radius, rl.GetColor(0xff0000ff))
+			}
 
-		// Table P1 ---------------------------------------------------------------------------------------------------------------------
-		rl.DrawRectanglePro(rl.NewRectangle(-10, Screen.Y/2, 260, 500), rl.NewVector2(0,0), 0.0, rl.Blue)
-		rl.DrawRectangleLinesEx(rl.NewRectangle(-10, (Screen.Y/2) - 15, 275, 500), 15, rl.Black)
-		rl.DrawRectanglePro(rl.NewRectangle(-10, (Screen.Y/2) + 400, 260, 20), rl.NewVector2(0,0), 0.0, rl.GetColor(0x00000066))
-		
-		rl.DrawTextureEx(TextureAmmoContainer, rl.NewVector2(10, Screen.Y - 250), 0.0, 6, rl.White)
-		rl.DrawTextureEx(TextureAmmo, rl.NewVector2(100, Screen.Y - 220), 0.0, 6, rl.White)
-		rl.DrawText(fmt.Sprintf(": %d", Gun.Mag - Gun.Shots), 160, int32(Screen.Y)- 210, 60, rl.White)
-		
-		rl.DrawTextureEx(TextureHeart, rl.NewVector2(10, Screen.Y - 390), 0.0, 6, rl.White)
-		rl.DrawText(fmt.Sprintf(": %d",Bean.Lives), 160, int32(Screen.Y) - 360, 60, rl.White)
+			// Beans renderer ----------------------------------------------------------------------------------------------------------------
+			rl.DrawRectangleV(Bean.Pos, rl.NewVector2(Bean.Width, Bean.Height), rl.GetColor(0x00ffffff))
+			Bean.Pos.X += Bean.Width/2
+			Bean.Pos.Y -= 19
+			rl.DrawCircleV(Bean.Pos, Bean.Radius, rl.GetColor(0x00ffffff))
+			Bean.Pos.X -= Bean.Width/2
+			Bean.Pos.Y += 19
 
-		// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(10, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
-		// rl.DrawRectangleLinesEx(rl.NewRectangle(10,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
-		// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(94, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
-		// rl.DrawRectangleLinesEx(rl.NewRectangle(94,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
-		// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(178, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
-		// rl.DrawRectangleLinesEx(rl.NewRectangle(178, Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+			rl.DrawRectangleV(Bean2.Pos, rl.NewVector2(Bean2.Width, Bean2.Height), rl.GetColor(0xff0000ff))
+			Bean2.Pos.X += Bean2.Width/2
+			Bean2.Pos.Y -= 19
+			rl.DrawCircleV(Bean2.Pos, Bean2.Radius, rl.GetColor(0xffffffff))
+			Bean2.Pos.X -= Bean2.Width/2
+			Bean2.Pos.Y += 19
 
-		//-------------------------------------------------------------------------------------------------------------------------------
+			if !Bean.isCrouched{
+				rl.DrawTextureV(TextureStand, rl.NewVector2(Bean.Pos.X, Bean.Pos.Y - (Bean.Radius*2)), rl.GetColor(0xffffffff))
+			}else {
+				rl.DrawTextureV(TextureCrouch, rl.NewVector2(Bean.Pos.X, Bean.Pos.Y - (Bean.Radius*2)), rl.GetColor(0xffffffff))
+			}
+			//--------------------------------------------------------------------------------------------------------------------------------
 
-		//Table P2 ----------------------------------------------------------------------------------------------------------------------
-		rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 260, Screen.Y/2, 260, 500), rl.NewVector2(0,0), 0.0,rl.Red)
-		rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 265, Screen.Y/2, 280, 500), 15, rl.Black)
-		rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 255, Screen.Y/2 + 400, 280, 20), rl.NewVector2(0,0), 0.0, rl.GetColor(0x00000066))
+			// gun renderer ------------------------------------------------------------------------------------------------------------------
+			if Gun.Dir == 1 {
+				rl.DrawTextureEx(TextureGun, rl.NewVector2(Gun.Pos.X - 15, Gun.Pos.Y - 15), Gun.Angle, 2, rl.GetColor(0xffffffff))
+			}else {
+				rl.DrawTextureEx(TextureGunFlipped, rl.NewVector2(Gun.Pos.X + 15, Gun.Pos.Y + 45), Gun.Angle, 2, rl.GetColor(0xffffffff))
+			}
+			if Gun2.Dir == 1 {
+				rl.DrawTextureEx(TextureGun, rl.NewVector2(Gun2.Pos.X -15, Gun2.Pos.Y - 15), Gun2.Angle , 2, rl.GetColor(0xffffffff))
+			}else {
+				rl.DrawTextureEx(TextureGunFlipped, rl.NewVector2(Gun2.Pos.X +15, Gun2.Pos.Y + 45), Gun2.Angle, 2, rl.GetColor(0xffffffff))
+			}
+			//--------------------------------------------------------------------------------------------------------------------------------
 
-		rl.DrawTextureEx(TextureAmmoContainer, rl.NewVector2(Screen.X - 100, Screen.Y - 250), 0.0, 6, rl.White)
-		rl.DrawTextureEx(TextureAmmo, rl.NewVector2(Screen.X - 155, Screen.Y - 220), 0.0, 6, rl.White)
-		rl.DrawText(fmt.Sprintf("%d :", Gun2.Mag - Gun2.Shots), int32(Screen.X) - 245, int32(Screen.Y) - 210, 60, rl.White)
+			rl.DrawRectangleLinesEx(rl.NewRectangle(Bean.Pos.X + (Bean.Width/2) - 100, Bean.Pos.Y - (Bean.Radius * 2) - 50, 200, 30), 10, rl.GetColor(0x000000ff))
+			rl.DrawRectangleV(rl.NewVector2(Bean.Pos.X + (Bean.Width/2) - 90, Bean.Pos.Y - (Bean.Radius*2) - 40), rl.NewVector2((180 * (Bean.Health/100)), 10), rl.GetColor(0x00ff00ff))
 
-		rl.DrawTextureEx(TextureHeart, rl.NewVector2(Screen.X - 130, Screen.Y - 390), 0.0, 6, rl.White)
-		rl.DrawText(fmt.Sprintf("%d :", Bean2.Lives), int32(Screen.X) - 230, int32(Screen.Y) - 360, 60, rl.White)
-		//-------------------------------------------------------------------------------------------------------------------------------
+			rl.DrawRectangleLinesEx(rl.NewRectangle(Bean2.Pos.X + (Bean2.Width/2) - 100, Bean2.Pos.Y - (Bean2.Radius * 2) - 50, 200, 30), 10, rl.GetColor(0x000000ff))
+			rl.DrawRectangleV(rl.NewVector2(Bean2.Pos.X + (Bean2.Width/2) - 90 + (180 - width), Bean2.Pos.Y - (Bean2.Radius * 2) - 40), rl.NewVector2(width, 10), rl.GetColor(0x00ff00ff))
 
-		//---------------------------------------------------------------------------------------------------------------------------------------
+			rl.EndMode2D()
 
-		// Score tab ------------------------------------------------------------------------------------------------------------------------
-		rl.DrawRectanglePro(rl.NewRectangle(-10, Screen.Y - 120, 740, 200), rl.NewVector2(0,0), 0.0, rl.Blue)
-		rl.DrawRectangleLinesEx(rl.NewRectangle(-10, Screen.Y - 130, 750, 200), 15, rl.Black)
-		rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 740, Screen.Y - 120, 740, 200), rl.NewVector2(0, 0), 0.0, rl.Red)
-		rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 750, Screen.Y - 130, 790, 200), 15, rl.Black)
-		
-		rl.DrawText(fmt.Sprintf("Score Player1: %d",ScoreP1), 30, int32(Screen.Y - 100), 80, rl.GetColor(0xffffffff))
-		rl.DrawText(fmt.Sprintf("%d :Score Player2", ScoreP2), int32(Screen.X - 710), int32(Screen.Y - 100), 80, rl.GetColor(0xffffffff))
-		//-----------------------------------------------------------------------------------------------------------------------------------
+			// rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v\nCrouched: %v\nGun Angle: %0.1f\nGun2 Angle: %0.1f",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded, Bean.isCrouched, Gun.Angle, Gun2.Angle), 10, 10, 30, rl.GetColor(0xffffffff))
 
-		// Timer and FPS --------------------------------------------------------------------------------------------------------------------
-		rl.DrawText(fmt.Sprintf("%0.0f:%0.0f:%0.01f", Hour, Minutes, Timer), int32(Screen.X/2) - 44, 30, 40, rl.GetColor(0xffffffff))
-		rl.DrawText(fmt.Sprintf("FPS: %v", FPS), 30, 30, 30, rl.White)
-		//-----------------------------------------------------------------------------------------------------------------------------------
+			// Info Tablet -------------------------------------------------------------------------------------------------------------------------
 
-		if Pause {
-			rl.DrawRectanglePro(rl.NewRectangle(0, 0, Screen.X, Screen.Y), rl.NewVector2(0, 0), 0.0, rl.GetColor(0x44444488))
+			// Table P1 ---------------------------------------------------------------------------------------------------------------------
+			rl.DrawRectanglePro(rl.NewRectangle(-10, Screen.Y/2, 260, 500), rl.NewVector2(0,0), 0.0, rl.Blue)
+			rl.DrawRectangleLinesEx(rl.NewRectangle(-10, (Screen.Y/2) - 15, 275, 500), 15, rl.Black)
+			rl.DrawRectanglePro(rl.NewRectangle(-10, (Screen.Y/2) + 400, 260, 20), rl.NewVector2(0,0), 0.0, rl.GetColor(0x00000066))
+
+			rl.DrawTextureEx(TextureAmmoContainer, rl.NewVector2(10, Screen.Y - 250), 0.0, 6, rl.White)
+			rl.DrawTextureEx(TextureAmmo, rl.NewVector2(100, Screen.Y - 220), 0.0, 6, rl.White)
+			rl.DrawText(fmt.Sprintf(": %d", Gun.Mag - Gun.Shots), 160, int32(Screen.Y)- 210, 60, rl.White)
+
+			rl.DrawTextureEx(TextureHeart, rl.NewVector2(10, Screen.Y - 390), 0.0, 6, rl.White)
+			rl.DrawText(fmt.Sprintf(": %d",Bean.Lives), 160, int32(Screen.Y) - 360, 60, rl.White)
+
+			// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(10, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+			// rl.DrawRectangleLinesEx(rl.NewRectangle(10,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+			// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(94, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+			// rl.DrawRectangleLinesEx(rl.NewRectangle(94,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+			// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(178, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+			// rl.DrawRectangleLinesEx(rl.NewRectangle(178, Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+
+			//-------------------------------------------------------------------------------------------------------------------------------
+
+			//Table P2 ----------------------------------------------------------------------------------------------------------------------
+			rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 260, Screen.Y/2, 260, 500), rl.NewVector2(0,0), 0.0,rl.Red)
+			rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 265, Screen.Y/2, 280, 500), 15, rl.Black)
+			rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 255, Screen.Y/2 + 400, 280, 20), rl.NewVector2(0,0), 0.0, rl.GetColor(0x00000066))
+
+			rl.DrawTextureEx(TextureAmmoContainer, rl.NewVector2(Screen.X - 100, Screen.Y - 250), 0.0, 6, rl.White)
+			rl.DrawTextureEx(TextureAmmo, rl.NewVector2(Screen.X - 155, Screen.Y - 220), 0.0, 6, rl.White)
+			rl.DrawText(fmt.Sprintf("%d :", Gun2.Mag - Gun2.Shots), int32(Screen.X) - 245, int32(Screen.Y) - 210, 60, rl.White)
+
+			rl.DrawTextureEx(TextureHeart, rl.NewVector2(Screen.X - 130, Screen.Y - 390), 0.0, 6, rl.White)
+			rl.DrawText(fmt.Sprintf("%d :", Bean2.Lives), int32(Screen.X) - 230, int32(Screen.Y) - 360, 60, rl.White)
+			//-------------------------------------------------------------------------------------------------------------------------------
+
+			//---------------------------------------------------------------------------------------------------------------------------------------
+
+			// Score tab ------------------------------------------------------------------------------------------------------------------------
+			rl.DrawRectanglePro(rl.NewRectangle(-10, Screen.Y - 120, 740, 200), rl.NewVector2(0,0), 0.0, rl.Blue)
+			rl.DrawRectangleLinesEx(rl.NewRectangle(-10, Screen.Y - 130, 750, 200), 15, rl.Black)
+			rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 740, Screen.Y - 120, 740, 200), rl.NewVector2(0, 0), 0.0, rl.Red)
+			rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 750, Screen.Y - 130, 790, 200), 15, rl.Black)
+
+			rl.DrawText(fmt.Sprintf("Score Player1: %d",ScoreP1), 30, int32(Screen.Y - 100), 80, rl.GetColor(0xffffffff))
+			rl.DrawText(fmt.Sprintf("%d :Score Player2", ScoreP2), int32(Screen.X - 710), int32(Screen.Y - 100), 80, rl.GetColor(0xffffffff))
+			//-----------------------------------------------------------------------------------------------------------------------------------
+
+			// Timer and FPS --------------------------------------------------------------------------------------------------------------------
+			rl.DrawText(fmt.Sprintf("%0.0f:%0.0f:%0.01f", Hour, Minutes, Timer), int32(Screen.X/2) - 44, 30, 40, rl.GetColor(0xffffffff))
 			rl.DrawText(fmt.Sprintf("FPS: %v", FPS), 30, 30, 30, rl.White)
+			//-----------------------------------------------------------------------------------------------------------------------------------
 
-			rl.DrawText("PAUSED", int32(Screen.X/2)- 170, int32(Screen.Y/2) - 61, 80, rl.GetColor(0x000000ff))
-			rl.DrawText("PAUSED", int32(Screen.X/2) - 165, int32(Screen.Y/2) - 65, 80, rl.Red)
+			if Pause {
+				rl.DrawRectanglePro(rl.NewRectangle(0, 0, Screen.X, Screen.Y), rl.NewVector2(0, 0), 0.0, rl.GetColor(0x44444488))
+				rl.DrawText(fmt.Sprintf("FPS: %v", FPS), 30, 30, 30, rl.White)
 
-			rl.DrawText("Press Space to Continue", int32(Screen.X/2)- 339, int32(Screen.Y/2) + 13, 50, rl.Black)
-			rl.DrawText("Press Space to Continue", int32(Screen.X/2) - 335, int32(Screen.Y/2) + 10, 50, rl.Red)
-		}
+				rl.DrawText("PAUSED", int32(Screen.X/2)- 170, int32(Screen.Y/2) - 61, 80, rl.GetColor(0x000000ff))
+				rl.DrawText("PAUSED", int32(Screen.X/2) - 165, int32(Screen.Y/2) - 65, 80, rl.Red)
 
-		}else {
+				rl.DrawText("Press Space to Continue", int32(Screen.X/2)- 339, int32(Screen.Y/2) + 13, 50, rl.Black)
+				rl.DrawText("Press Space to Continue", int32(Screen.X/2) - 335, int32(Screen.Y/2) + 10, 50, rl.Red)
+
+				
+
+				if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X - 120, 20, 100, 100)) {
+					if rl.IsMouseButtonReleased(rl.MouseButtonLeft) {
+						Quit = true
+						Start = false
+						Controls = false
+					}else if rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+						rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 110, 30 , 80, 80), rl.NewVector2(0,0), 0.0, rl.GetColor(0xaa1111ff))
+						rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 115, 30, 90, 85), 5, rl.GetColor(0x000000ff))
+						rl.DrawText("X", int32(Screen.X) - 97, 32, 90, rl.Black)
+					}else {
+						rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 130, 10 , 120, 120), rl.NewVector2(0,0), 0.0, rl.GetColor(0xff1111ff))
+						rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 135, 10, 130, 125), 5, rl.GetColor(0xffffffff))
+						rl.DrawText("X", int32(Screen.X) - 105, 18, 120, rl.White)
+					}
+
+				}else {
+					rl.DrawRectanglePro(rl.NewRectangle(Screen.X - 120, 20 , 100, 100), rl.NewVector2(0,0), 0.0, rl.GetColor(0xff1111ff))
+					rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 125, 20, 110, 105), 5, rl.GetColor(0xffffffff))
+					rl.DrawText("X", int32(Screen.X) - 99, 27, 100, rl.White)
+				}
+			}
+
+		}else if Menu{  // Opens menu on start-up
 			rl.ClearBackground(rl.GetColor(0x333333ff))
 			rl.DrawText("Bouncing Betty 2 Player", int32(Screen.X/2) - 610, int32(Screen.Y/2) - 290, 100, rl.GetColor(0x000000ff))
 			rl.DrawText("Bouncing Betty 2 Player", int32(Screen.X/2) - 600, int32(Screen.Y/2) - 300, 100, rl.GetColor(0xff2222ff))
 
-			if !rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2, 300, 122)) { 
+			if !rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2, 300, 100)) {    // didnt realize until later that there is a cleaner way to do this and i dont wanna touch this now so imma just leace it like this since cleaning this wont even matter as much cause its just rendering stuff. Start Button in Main Menu.
 				rl.DrawRectangle(int32(Screen.X/2) - 160, int32(Screen.Y/2), 300, 100, rl.GetColor(0x00ff44ff))
 				rl.DrawText("Start", int32(Screen.X/2) - 122, int32(Screen.Y/2) + 13, 80, rl.GetColor(0x222222ff))
-			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2, 300, 122)) && rl.IsMouseButtonDown(rl.MouseButtonLeft) {
-				
-			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 -160, Screen.Y/2, 300, 122)) {
+
+			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2, 300, 100)) && rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+				rl.DrawRectangle(int32(Screen.X/2) - 150, int32(Screen.Y/2) + 10, 290, 90, rl.GetColor(0x000000ff))
+				rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2, 300, 100), 10, rl.GetColor(0xffffffff))
+				rl.DrawText("Start", int32(Screen.X/2) - 90, int32(Screen.Y/2) + 23, 60, rl.GetColor(0xffffffff))
+
+			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 -160, Screen.Y/2, 300, 100)) {
 				rl.DrawRectangle(int32(Screen.X/2) - 170, int32(Screen.Y/2) - 10 , 325, 130, rl.GetColor(0x00bb44ff))
 				rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X/2 - 180, Screen.Y/2 - 20, 345, 140), 10, rl.GetColor(0x000000ff))
 				rl.DrawText("Start", int32(Screen.X/2) - 145, int32(Screen.Y/2) + 5, 100, rl.GetColor(0xffffffff))
 			}
 
-			if !rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 +150, 300, 100)) {
+			if !rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 +150, 300, 100)) {  // Controls Button in Main Menu
 				rl.DrawRectangle(int32(Screen.X/2) - 160, int32(Screen.Y/2) + 150, 300, 100, rl.GetColor(0x1144ffff))
 				rl.DrawText("Controls", int32(Screen.X/2) - 155, int32(Screen.Y/2) + 168, 67, rl.GetColor(0x111111ff))
-			}else {
+
+			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 + 150, 300, 100)) && rl.IsMouseButtonDown(rl.MouseButtonLeft){
+				rl.DrawRectangle(int32(Screen.X/2) - 150, int32(Screen.Y/2) + 160, 290, 90, rl.GetColor(0x000000ff))
+				rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 + 150, 300, 100), 10, rl.GetColor(0xffffffff))
+				rl.DrawText("Controls", int32(Screen.X/2) - 122, int32(Screen.Y/2) + 175, 50, rl.GetColor(0xffffffff))
+
+			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 +150, 300, 100)){
 				rl.DrawRectangle(int32(Screen.X/2) - 170, int32(Screen.Y/2) + 140, 320, 120, rl.GetColor(0x1144aaff))
 				rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X/2 - 180, Screen.Y/2 + 130, 340, 140), 10, rl.GetColor(0x000000ff))
 				rl.DrawText("Controls", int32(Screen.X/2) - 165, int32(Screen.Y/2) + 168, 70, rl.GetColor(0xffffffff))
 			}
 
-			if !rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 + 300, 300, 100)) {
+			if !rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 + 300, 300, 100)) {  // Quit Button in Main Menu
 				rl.DrawRectangle(int32(Screen.X/2) - 160, int32(Screen.Y/2) + 300, 300, 100, rl.GetColor(0xff1111ff))
 				rl.DrawText("Quit", int32(Screen.X/2) - 90, int32(Screen.Y/2) + 313, 80, rl.GetColor(0x000000ff))
-			}else {
+				
+			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 + 300, 300, 100)) && rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+				rl.DrawRectangle(int32(Screen.X/2) - 150, int32(Screen.Y/2) + 310 , 290, 90, rl.GetColor(0x000000ff))
+				rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 + 300, 300, 100), 10, rl.GetColor(0xffffffff))
+				rl.DrawText("Quit", int32(Screen.X/2) - 68, int32(Screen.Y/2) + 323, 60, rl.GetColor(0xffffffff))
+			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 + 300, 300, 100)){
 				rl.DrawRectangle(int32(Screen.X/2) - 170, int32(Screen.Y/2) + 290, 320, 120, rl.GetColor(0xaa1111ff))
 				rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X/2 - 180, Screen.Y/2 + 280, 340, 140), 10, rl.GetColor(0x000000ff))
 				rl.DrawText("Quit", int32(Screen.X/2) - 105, int32(Screen.Y/2) + 305, 100, rl.GetColor(0xffffffff))
 			}
 
+			if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2, 300, 100)) && rl.IsMouseButtonReleased(rl.MouseButtonLeft) {  // Triggers if Start Button is pressed in the Main Menu
+				Menu = false
+				Start = true
+				Controls = false
+				Quit = false
+			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 + 150, 300, 100)) && rl.IsMouseButtonReleased(rl.MouseButtonLeft) {  // Triggers if the Controls button is pressed in the Main menu
+				Controls = true
+				Menu = false
+				Start = false
+				Quit = false
+			}else if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X/2 - 160, Screen.Y/2 + 300, 300, 100)) && rl.IsMouseButtonReleased(rl.MouseButtonLeft) {  // Triggers if the Quit button is pressed in the Main Menu
+				Quit = true
+				Menu = false
+				Start = false
+				Controls = false
+			}
 
+
+		}
+
+		if Controls {  // Opens The Controls Menu and hides the Main Menu
+			rl.ClearBackground(rl.Gray)
+			rl.DrawRectangle(100, 100, 650, int32(Screen.Y) - 200, rl.White)
+			rl.DrawRectangleLinesEx(rl.NewRectangle(90, 90 , 670, Screen.Y - 180), 10, rl.Black)
+
+			rl.DrawRectangle(int32(Screen.X) - 1100, 100, 1000, int32(Screen.Y) - 300, rl.White)
+			rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 1110, 90, 1010, Screen.Y - 290), 10, rl.Black)
+
+			if rl.CheckCollisionPointRec(rl.GetMousePosition(), rl.NewRectangle(Screen.X - 620, Screen.Y - 150, 520 ,100)){ // Controls Menu Back Button Logic and Function
+				if rl.IsMouseButtonReleased(rl.MouseButtonLeft){
+					Menu = true
+					Start = false
+					Controls = false
+					Quit = false
+				}else if rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+					rl.DrawRectangle(int32(Screen.X) - 620, int32(Screen.Y) - 150, 520, 100, rl.Black)
+					rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 630, Screen.Y - 160, 540, 120), 10, rl.White)
+					rl.DrawText("Return to Menu", int32(Screen.X) - 600, int32(Screen.Y) - 130, 60, rl.White)
+				}else{
+					rl.DrawRectangle(int32(Screen.X) - 630, int32(Screen.Y) - 160, 540, 120, rl.GetColor(0xff0000ff))
+					rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 640, Screen.Y - 170, 560, 140), 10, rl.Black)
+					rl.DrawText("Return to Menu", int32(Screen.X) - 620, int32(Screen.Y) - 130, 66, rl.Black)
+				}
+			}else {
+				rl.DrawRectangle(int32(Screen.X) - 620, int32(Screen.Y) - 150, 520, 100, rl.GetColor(0xff0000ff))
+				rl.DrawRectangleLinesEx(rl.NewRectangle(Screen.X - 630, Screen.Y - 160, 540, 120), 10, rl.Black)
+				rl.DrawText("Return to Menu", int32(Screen.X) - 600, int32(Screen.Y) - 130, 60, rl.Black)
+			}
+		}
+
+		if Quit {  //Triggers to close the window when true
+			rl.CloseWindow()
 		}
 		
 		rl.EndDrawing()
