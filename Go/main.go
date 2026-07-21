@@ -5,7 +5,6 @@ import (
 	Math "math"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
-
 )
 
 type screen struct {
@@ -107,6 +106,7 @@ type PowerUp struct {
 	Type       int
 	Pos        rl.Vector2
 	SpawnIndex int
+	LifeSpan   float32
 }
 type spawnPoints struct {
 	Pos      rl.Vector2
@@ -125,6 +125,7 @@ var Timer float32
 var Minutes float32
 var Hour float32
 var FPS int32
+var SpawnPowerUp float32 = 4
 
 var Start bool
 var Menu bool = true
@@ -263,8 +264,12 @@ func main() {
 	}
 
 	PowerUps := []powerUpData{
-		{Type: PUHealth, Weight: 40, Duration: 0.001, Texture: rl.LoadTexture("./Textures/Powers/PowerHealth.png")},
-		{Type: PUFirerate, Weight: 50, Duration:  5, Texture: rl.LoadTexture("./Textures/Powers/PowerHealth.png")},
+		{Type: PUHealth, Weight: 50, Duration: 0.001, Texture: rl.LoadTexture("./Textures/Powers/PowerHealth.png")},
+		{Type: PUFirerate, Weight: 40, Duration: 5, Texture: rl.LoadTexture("./Textures/Powers/PowerHealth.png")},
+		// {Type: PUDamage, Weight: 30, Duration: 5, Texture: rl.LoadTexture("")},
+		// {Type: PUReload, Weight: 25, Duration: 10, Texture: rl.LoadTexture("")},
+		// {Type: PUMag, Weight: 20, Duration: 10, Texture: rl.LoadTexture("")},
+		// {Type: PUImune, Weight: 10, Duration: 5, Texture: rl.LoadTexture("")},
 	}
 
 	SpawnedPowerUps := []PowerUp{}
@@ -793,7 +798,6 @@ func main() {
 					if Bullets[Bullet].Time <= 0 {
 						Bullets[Bullet] = Bullets[len(Bullets)-1]
 						Bullets = Bullets[:len(Bullets)-1]
-						// Bullet--
 					} else {
 						Bullets[Bullet].Time -= dT
 						Bullet++
@@ -805,7 +809,18 @@ func main() {
 
 				// Power Ups Handler -------------------------------------------------------------------------------------------------------------------------------------------------------
 				// replace with code for Power Ups Handler lol, this got a bit difficult so i doing menus first.
-				SpawnedPowerUps = RandomPowerUpSpawner(SpawnPoints, PowerUps)
+				if SpawnPowerUp < 0.0 {
+					SpawnPowerUp = 0.0
+				} else {
+					SpawnPowerUp -= dT
+				}
+
+				if SpawnPowerUp <= 0.0 {
+					SpawnedPowerUps = RandomPowerUpSpawner(SpawnPoints, PowerUps)
+					SpawnPowerUp = 4.0
+				}
+
+				CheckForPowerUpDespawn(dT, SpawnPoints)
 				//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 				// Health Bar --------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -867,17 +882,17 @@ func main() {
 			//-------------------------------------------------------------------------------------------------------------------------------
 
 			// Power Ups renderer ------------------------------------------------------------------------------------------------------------------------------------------------
-			for _,p := range SpawnedPowerUps {
+			for _, p := range SpawnedPowerUps {
 				rl.DrawRectangleV(p.Pos, rl.NewVector2(92, 92), rl.GetColor(0x11111100))
 
 				switch p.Type {
 				case PUHealth:
-					rl.DrawTextureEx(PowerUps[PUHealth].Texture, p.Pos,0.0, 2, rl.White)
+					rl.DrawTextureEx(PowerUps[PUHealth].Texture, p.Pos, 0.0, 2, rl.White)
 				case PUFirerate:
 					// rl.DrawTextureEx(PowerUps[PUDamage].Texture, p.Pos, 0.0, 2, rl.White)
 					rl.DrawRectangleV(p.Pos, rl.NewVector2(100, 100), rl.GetColor(0x0000ffff))
 				}
-				
+
 			}
 			//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -910,7 +925,6 @@ func main() {
 			//--------------------------------------------------------------------------------------------------------------------------------
 
 			// gun renderer ------------------------------------------------------------------------------------------------------------------
-			rl.DrawRectangleV(Gun.Pos, rl.NewVector2(Gun.Width, Gun.Height), rl.Red)
 			if Gun.Dir == 1 {
 				rl.DrawTextureEx(TextureGun, rl.NewVector2(Gun.Pos.X-15, Gun.Pos.Y-15), Gun.Angle, 2, rl.GetColor(0xffffffff))
 			} else {
