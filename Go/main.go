@@ -126,6 +126,10 @@ var Minutes float32
 var Hour float32
 var FPS int32
 var SpawnPowerUp float32 = 4
+var PowerType1 int 
+var Power1 bool
+var PowerType2 int
+var Power2 bool
 
 var Start bool
 var Menu bool = true
@@ -144,6 +148,7 @@ const (
 	PUMag
 	PUImune
 )
+
 
 func main() {
 	rl.SetConfigFlags(rl.FlagWindowResizable | rl.FlagWindowMaximized)
@@ -816,11 +821,18 @@ func main() {
 				}
 
 				if SpawnPowerUp <= 0.0 {
-					SpawnedPowerUps = RandomPowerUpSpawner(SpawnPoints, PowerUps)
+					SpawnedPowerUps = RandomPowerUpSpawner(SpawnedPowerUps, SpawnPoints, PowerUps)
 					SpawnPowerUp = 4.0
 				}
 
-				CheckForPowerUpDespawn(dT, SpawnPoints)
+				if Bean.PowersNumber < 3 {
+				SpawnedPowerUps, Power1 ,PowerType1 = CheckPlayerPowerUpPickUp(SpawnedPowerUps, &Bean, SpawnPoints)
+				}
+				if Bean2.PowersNumber < 3 {
+					SpawnedPowerUps, Power2, PowerType2 = CheckPlayerPowerUpPickUp(SpawnedPowerUps, &Bean2, SpawnPoints)
+				}
+
+				SpawnedPowerUps = CheckForPowerUpDespawn(SpawnedPowerUps, dT, SpawnPoints)
 				//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 				// Health Bar --------------------------------------------------------------------------------------------------------------------------------------------------------------
