@@ -49,6 +49,7 @@ type gun struct {
 	Shots       int
 	CanShoot    bool
 	Delay       float32
+	ShootDelay float32
 	Reloading   bool
 	ReloadDelay float32
 	Barrel      rl.Vector2
@@ -256,8 +257,8 @@ func main() {
 	Bean := bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: 3}
 	Bean2 := bean{Pos: rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: 3}
 
-	Gun := gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
-	Gun2 := gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.15}
+	Gun := gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.0, ShootDelay: 0.25}
+	Gun2 := gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.0, ShootDelay: 0.25}
 
 	Bullets := []bullet{}
 
@@ -276,8 +277,8 @@ func main() {
 
 	PowerUps := []powerUpData{
 		{Type: PUHealth, Weight: 50, Duration: 0.001, Texture: rl.LoadTexture("./Textures/Powers/PowerHealth.png")},
-		{Type: PUFirerate, Weight: 40, Duration: 5, Texture: rl.LoadTexture("./Textures/Powers/PowerFirerate.png")},
-		{Type: PUDamage, Weight: 30, Duration: 5, Texture: rl.LoadTexture("./Textures/Powers/PowerDamage.png")},
+		{Type: PUFirerate, Weight: 40, Duration: 10, Texture: rl.LoadTexture("./Textures/Powers/PowerFirerate.png")},
+		{Type: PUDamage, Weight: 30, Duration: 10, Texture: rl.LoadTexture("./Textures/Powers/PowerDamage.png")},
 		// {Type: PUReload, Weight: 25, Duration: 10, Texture: rl.LoadTexture("")},
 		// {Type: PUMag, Weight: 20, Duration: 10, Texture: rl.LoadTexture("")},
 		// {Type: PUImune, Weight: 10, Duration: 5, Texture: rl.LoadTexture("")},
@@ -689,7 +690,7 @@ func main() {
 				if rl.IsKeyDown(rl.KeyF) && Gun.CanShoot && !Gun.Reloading {
 					Gun.CanShoot = false
 					if Gun.Shots < Gun.Mag {
-						Gun.Delay = 0.25
+						Gun.Delay = Gun.ShootDelay
 					}
 					Gun.Shots++
 					Bullets = append(Bullets, NewBullets(Gun))
@@ -834,30 +835,34 @@ func main() {
 
 				if Bean.PowersNumber < 3 {
 					SpawnedPowerUps, Power1, PowerType1 = CheckPlayerPowerUpPickUp(SpawnedPowerUps, &Bean, SpawnPoints)
-					BeanPowers = append(BeanPowers, beanPowers{Type: PowerType1, LifeTime: PowerUps[PowerType1].Duration, Active: false})
+					if Power1 {
+						BeanPowers = append(BeanPowers, beanPowers{Type: PowerType1, LifeTime: PowerUps[PowerType1].Duration, Active: false})
+					}
 				}
 				if Bean2.PowersNumber < 3 {
 					SpawnedPowerUps, Power2, PowerType2 = CheckPlayerPowerUpPickUp(SpawnedPowerUps, &Bean2, SpawnPoints)
-					Bean2Powers = append(Bean2Powers, beanPowers{Type: PowerType2, LifeTime: PowerUps[PowerType2].Duration, Active: false})
+					if Power2 {
+						Bean2Powers = append(Bean2Powers, beanPowers{Type: PowerType2, LifeTime: PowerUps[PowerType2].Duration, Active: false})
+					}
 				}
 
 				if len(BeanPowers) != 0 {
 					
-					for i := 0; i < len(BeanPowers)-1; {
+					for i := 0; i < len(BeanPowers); {
 						
 						if BeanPowers[i].LifeTime > 0 {
-							
 							if !BeanPowers[i].Active {
 								
 								switch BeanPowers[i].Type {
 								case PUHealth:
-									if Bean.Health+25 < 100 {
-										Bean.Health += 25
+									Bean.Health += 25
+									if Bean.Health > 100 {
+										Bean.Health = 100
 									}
 								case PUFirerate:
-									Gun.Delay = 0.15
+									Gun.ShootDelay -= 0.05
 								case PUDamage:
-									Bullets[len(Bullets)-1].Damage = 25
+									BulletDamage += 10
 								}
 
 								BeanPowers[i].Active = true
@@ -865,19 +870,21 @@ func main() {
 
 							BeanPowers[i].LifeTime -= dT
 
-						} else if BeanPowers[i].LifeTime <= 0 {
+						} else {
 							
 							switch BeanPowers[i].Type {
 							case PUHealth:
 							case PUFirerate:
-								Gun.Delay = 0.25
+								Gun.ShootDelay += 0.05
 							case PUDamage:
+								BulletDamage -= 10
 							}
 
 							Bean.PowersNumber -= 1
 							BeanPowers[i] = BeanPowers[len(BeanPowers)-1]
 							BeanPowers = BeanPowers[:len(BeanPowers)-1]
 						}
+							i++
 					}
 				}
 
@@ -1063,6 +1070,7 @@ func main() {
 			// Timer and FPS --------------------------------------------------------------------------------------------------------------------
 			rl.DrawText(fmt.Sprintf("%0.0f:%0.0f:%0.01f", Hour, Minutes, Timer), int32(Screen.X/2)-44, 30, 40, rl.GetColor(0xffffffff))
 			rl.DrawText(fmt.Sprintf("FPS: %v", FPS), 30, 30, 30, rl.White)
+			rl.DrawText(fmt.Sprintf("delay: %0.001f", Gun.Delay), 10, 50, 50, rl.White)
 			//-----------------------------------------------------------------------------------------------------------------------------------
 
 			if Pause {
@@ -1206,8 +1214,8 @@ func main() {
 			ScoreP2 += 1
 			Bean = bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean.Lives}
 			Bean2 = bean{Pos: rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean2.Lives}
-			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15}
-			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15}
+			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15, ShootDelay: 0.25}
+			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15, ShootDelay: 0.25}
 			Bullets = []bullet{}
 			Timer = 0.0
 			Minutes = 0.0
@@ -1217,8 +1225,8 @@ func main() {
 			ScoreP1 += 1
 			Bean = bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean.Lives}
 			Bean2 = bean{Pos: rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean2.Lives}
-			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15}
-			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15}
+			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15, ShootDelay: 0.25}
+			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15, ShootDelay: 0.25}
 			Bullets = []bullet{}
 			Timer = 0.0
 			Minutes = 0.0
