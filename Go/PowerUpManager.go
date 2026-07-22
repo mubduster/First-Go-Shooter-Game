@@ -12,7 +12,7 @@ import (
 var Spawned bool
 var i int
 
-func RandomPowerUpSpawner(SpawnedPowerUps []PowerUp,SpawnPoints []spawnPoints, PowerUpsData []powerUpData) []PowerUp { // Spawns a randomly selected Power Up at a randomly selected Spawn Point.
+func RandomPowerUpSpawner(SpawnedPowerUps []PowerUp, SpawnPoints []spawnPoints, PowerUpsData []powerUpData) []PowerUp { // Spawns a randomly selected Power Up at a randomly selected Spawn Point.
 	Spawned = false
 
 	for !Spawned {
@@ -67,7 +67,7 @@ func CheckPlayerPowerUpPickUp(SpawnedPowerUps []PowerUp, actor *bean, SpawnPoint
 		if rl.CheckCollisionRecs(actorRect, PowerUpRect) {
 			SpawnPoints[SpawnedPowerUps[i].SpawnIndex].Occupied = false
 			power = SpawnedPowerUps[i].Type
-			actor.PowersNumber ++
+			actor.PowersNumber++
 
 			SpawnedPowerUps[i] = SpawnedPowerUps[len(SpawnedPowerUps)-1]
 			SpawnedPowerUps = SpawnedPowerUps[:len(SpawnedPowerUps)-1]
@@ -82,7 +82,7 @@ func CheckPlayerPowerUpPickUp(SpawnedPowerUps []PowerUp, actor *bean, SpawnPoint
 	return SpawnedPowerUps, false, -1 // -1 means no Power Ups
 }
 
-func CheckForPowerUpDespawn(SpawnedPowerUps []PowerUp, dT float32, SpawnPoints []spawnPoints) ([]PowerUp){ // Desapwns Power Up after a certain time has passed set by RandomPowerUpSpawner() and a player hasn't consumed it.
+func CheckForPowerUpDespawn(SpawnedPowerUps []PowerUp, dT float32, SpawnPoints []spawnPoints) []PowerUp { // Desapwns Power Up after a certain time has passed set by RandomPowerUpSpawner() and a player hasn't consumed it.
 	for i := 0; i < len(SpawnedPowerUps); {
 		SpawnedPowerUps[i].LifeSpan -= dT
 

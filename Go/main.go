@@ -112,6 +112,11 @@ type spawnPoints struct {
 	Pos      rl.Vector2
 	Occupied bool
 }
+type beanPowers struct {
+	Type     int
+	LifeTime float32
+	Active   bool
+}
 
 var MapColl mapColl
 
@@ -126,10 +131,12 @@ var Minutes float32
 var Hour float32
 var FPS int32
 var SpawnPowerUp float32 = 4
-var PowerType1 int 
+var PowerType1 int
 var Power1 bool
 var PowerType2 int
 var Power2 bool
+var BeanPowers []beanPowers
+var Bean2Powers []beanPowers
 
 var Start bool
 var Menu bool = true
@@ -148,7 +155,6 @@ const (
 	PUMag
 	PUImune
 )
-
 
 func main() {
 	rl.SetConfigFlags(rl.FlagWindowResizable | rl.FlagWindowMaximized)
@@ -270,8 +276,8 @@ func main() {
 
 	PowerUps := []powerUpData{
 		{Type: PUHealth, Weight: 50, Duration: 0.001, Texture: rl.LoadTexture("./Textures/Powers/PowerHealth.png")},
-		{Type: PUFirerate, Weight: 40, Duration: 5, Texture: rl.LoadTexture("./Textures/Powers/PowerHealth.png")},
-		// {Type: PUDamage, Weight: 30, Duration: 5, Texture: rl.LoadTexture("")},
+		{Type: PUFirerate, Weight: 40, Duration: 5, Texture: rl.LoadTexture("./Textures/Powers/PowerFirerate.png")},
+		{Type: PUDamage, Weight: 30, Duration: 5, Texture: rl.LoadTexture("./Textures/Powers/PowerDamage.png")},
 		// {Type: PUReload, Weight: 25, Duration: 10, Texture: rl.LoadTexture("")},
 		// {Type: PUMag, Weight: 20, Duration: 10, Texture: rl.LoadTexture("")},
 		// {Type: PUImune, Weight: 10, Duration: 5, Texture: rl.LoadTexture("")},
@@ -822,14 +828,57 @@ func main() {
 
 				if SpawnPowerUp <= 0.0 {
 					SpawnedPowerUps = RandomPowerUpSpawner(SpawnedPowerUps, SpawnPoints, PowerUps)
-					SpawnPowerUp = 4.0
+					SpawnPowerUp = 5.0
 				}
 
+
 				if Bean.PowersNumber < 3 {
-				SpawnedPowerUps, Power1 ,PowerType1 = CheckPlayerPowerUpPickUp(SpawnedPowerUps, &Bean, SpawnPoints)
+					SpawnedPowerUps, Power1, PowerType1 = CheckPlayerPowerUpPickUp(SpawnedPowerUps, &Bean, SpawnPoints)
+					BeanPowers = append(BeanPowers, beanPowers{Type: PowerType1, LifeTime: PowerUps[PowerType1].Duration, Active: false})
 				}
 				if Bean2.PowersNumber < 3 {
 					SpawnedPowerUps, Power2, PowerType2 = CheckPlayerPowerUpPickUp(SpawnedPowerUps, &Bean2, SpawnPoints)
+					Bean2Powers = append(Bean2Powers, beanPowers{Type: PowerType2, LifeTime: PowerUps[PowerType2].Duration, Active: false})
+				}
+
+				if len(BeanPowers) != 0 {
+					
+					for i := 0; i < len(BeanPowers)-1; {
+						
+						if BeanPowers[i].LifeTime > 0 {
+							
+							if !BeanPowers[i].Active {
+								
+								switch BeanPowers[i].Type {
+								case PUHealth:
+									if Bean.Health+25 < 100 {
+										Bean.Health += 25
+									}
+								case PUFirerate:
+									Gun.Delay = 0.15
+								case PUDamage:
+									Bullets[len(Bullets)-1].Damage = 25
+								}
+
+								BeanPowers[i].Active = true
+							}
+
+							BeanPowers[i].LifeTime -= dT
+
+						} else if BeanPowers[i].LifeTime <= 0 {
+							
+							switch BeanPowers[i].Type {
+							case PUHealth:
+							case PUFirerate:
+								Gun.Delay = 0.25
+							case PUDamage:
+							}
+
+							Bean.PowersNumber -= 1
+							BeanPowers[i] = BeanPowers[len(BeanPowers)-1]
+							BeanPowers = BeanPowers[:len(BeanPowers)-1]
+						}
+					}
 				}
 
 				SpawnedPowerUps = CheckForPowerUpDespawn(SpawnedPowerUps, dT, SpawnPoints)
@@ -901,8 +950,10 @@ func main() {
 				case PUHealth:
 					rl.DrawTextureEx(PowerUps[PUHealth].Texture, p.Pos, 0.0, 2, rl.White)
 				case PUFirerate:
-					// rl.DrawTextureEx(PowerUps[PUDamage].Texture, p.Pos, 0.0, 2, rl.White)
-					rl.DrawRectangleV(p.Pos, rl.NewVector2(100, 100), rl.GetColor(0x0000ffff))
+					rl.DrawTextureEx(PowerUps[PUFirerate].Texture, p.Pos, 0.0, 2, rl.White)
+					// rl.DrawRectangleV(p.Pos, rl.NewVector2(100, 100), rl.GetColor(0x0000ffff))
+				case PUDamage:
+					rl.DrawTextureEx(PowerUps[PUDamage].Texture, p.Pos, 0.0, 2, rl.White)
 				}
 
 			}
