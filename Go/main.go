@@ -39,6 +39,7 @@ type bean struct {
 	PowersNumber         int
 }
 type gun struct {
+	Player      int
 	Dir         int
 	PrevDir     int
 	Pos         rl.Vector2
@@ -49,9 +50,10 @@ type gun struct {
 	Shots       int
 	CanShoot    bool
 	Delay       float32
-	ShootDelay float32
+	ShootDelay  float32
 	Reloading   bool
 	ReloadDelay float32
+	ReloadTime  float32
 	Barrel      rl.Vector2
 }
 type bullet struct {
@@ -138,6 +140,9 @@ var PowerType2 int
 var Power2 bool
 var BeanPowers []beanPowers
 var Bean2Powers []beanPowers
+var Imune bool
+var Imune2 bool
+var Power int
 
 var Start bool
 var Menu bool = true
@@ -257,8 +262,8 @@ func main() {
 	Bean := bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: 3}
 	Bean2 := bean{Pos: rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: 3}
 
-	Gun := gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.0, ShootDelay: 0.25}
-	Gun2 := gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.0, ShootDelay: 0.25}
+	Gun := gun{Player: 1, Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.0, ShootDelay: 0.25, ReloadDelay: 0.0, ReloadTime: 1.5}
+	Gun2 := gun{Player: 2, Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 0, CanShoot: true, Delay: 0.0, ShootDelay: 0.25, ReloadDelay: 0.0, ReloadTime: 1.5}
 
 	Bullets := []bullet{}
 
@@ -279,9 +284,9 @@ func main() {
 		{Type: PUHealth, Weight: 50, Duration: 0.001, Texture: rl.LoadTexture("./Textures/Powers/PowerHealth.png")},
 		{Type: PUFirerate, Weight: 40, Duration: 10, Texture: rl.LoadTexture("./Textures/Powers/PowerFirerate.png")},
 		{Type: PUDamage, Weight: 30, Duration: 10, Texture: rl.LoadTexture("./Textures/Powers/PowerDamage.png")},
-		// {Type: PUReload, Weight: 25, Duration: 10, Texture: rl.LoadTexture("")},
-		// {Type: PUMag, Weight: 20, Duration: 10, Texture: rl.LoadTexture("")},
-		// {Type: PUImune, Weight: 10, Duration: 5, Texture: rl.LoadTexture("")},
+		{Type: PUReload, Weight: 25, Duration: 20, Texture: rl.LoadTexture("./Textures/Powers/PowerReload.png")},
+		{Type: PUMag, Weight: 20, Duration: 15, Texture: rl.LoadTexture("./Textures/Powers/PowerMag.png")},
+		{Type: PUImune, Weight: 10, Duration: 5, Texture: rl.LoadTexture("./Textures/Powers/PowerImune.png")},
 	}
 
 	SpawnedPowerUps := []PowerUp{}
@@ -661,12 +666,12 @@ func main() {
 
 				if rl.IsKeyPressed(rl.KeyR) && !Gun.Reloading && Gun.Shots < Gun.Mag {
 					Gun.Reloading = true
-					Gun.ReloadDelay = 1.5
+					Gun.ReloadDelay = Gun.ReloadTime
 				}
 
 				if Gun.Shots >= Gun.Mag && !Gun.Reloading {
 					Gun.Reloading = true
-					Gun.ReloadDelay = 1.5
+					Gun.ReloadDelay = Gun.ReloadTime
 				}
 
 				if Gun.Reloading {
@@ -738,16 +743,14 @@ func main() {
 
 				CheckBarrelPos(&Gun2, Map, Platforms)
 
-				// Gun2.Reloading = false
-
 				if rl.IsKeyPressed(rl.KeyP) && !Gun2.Reloading && Gun2.Shots < Gun2.Mag {
 					Gun2.Reloading = true
-					Gun2.ReloadDelay = 1.5
+					Gun2.ReloadDelay = Gun2.ReloadTime
 				}
 
 				if Gun2.Shots >= Gun2.Mag && !Gun2.Reloading {
 					Gun2.Reloading = true
-					Gun2.ReloadDelay = 1.5
+					Gun2.ReloadDelay = Gun2.ReloadTime
 				}
 
 				if Gun2.Reloading {
@@ -778,6 +781,7 @@ func main() {
 				}
 				//------------------------------------------------------------------------------------------------------------------------------------------------------
 
+				// Bullets Check for Collision and damage --------------------------------------------------------------------------------------------------------------
 				for Bullet := 0; Bullet < len(Bullets); {
 					Bullets[Bullet].PrevPos = Bullets[Bullet].Pos
 					Bullets[Bullet].Pos.X += Bullets[Bullet].Speed.X * dT
@@ -804,8 +808,8 @@ func main() {
 
 					resolveMapBulletCollision(Platforms, &Bullets[Bullet])
 
-					CheckBulletPlayerCollision(&Bullets[Bullet], &Bean)
-					CheckBulletPlayerCollision(&Bullets[Bullet], &Bean2)
+					CheckBulletPlayerCollision(&Bullets[Bullet], &Bean, Imune)
+					CheckBulletPlayerCollision(&Bullets[Bullet], &Bean2, Imune)
 
 					if Bullets[Bullet].Time <= 0 {
 						Bullets[Bullet] = Bullets[len(Bullets)-1]
@@ -814,9 +818,8 @@ func main() {
 						Bullets[Bullet].Time -= dT
 						Bullet++
 					}
-
 				}
-
+				//------------------------------------------------------------------------------------------------------------------------------------------------------
 				//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 				// Power Ups Handler -------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -832,9 +835,8 @@ func main() {
 					SpawnPowerUp = 5.0
 				}
 
-
 				if Bean.PowersNumber < 3 {
-					SpawnedPowerUps, Power1, PowerType1 = CheckPlayerPowerUpPickUp(SpawnedPowerUps, &Bean, SpawnPoints)
+					SpawnedPowerUps, Power1, PowerType1 = CheckPlayerPowerUpPickUp(SpawnedPowerUps, &Bean, SpawnPoints) // checks when player is touching a power up, and returns that power up type + bool + the updated Powers slice, and increments Bean'2 PowerNumber
 					if Power1 {
 						BeanPowers = append(BeanPowers, beanPowers{Type: PowerType1, LifeTime: PowerUps[PowerType1].Duration, Active: false})
 					}
@@ -847,12 +849,9 @@ func main() {
 				}
 
 				if len(BeanPowers) != 0 {
-					
 					for i := 0; i < len(BeanPowers); {
-						
 						if BeanPowers[i].LifeTime > 0 {
 							if !BeanPowers[i].Active {
-								
 								switch BeanPowers[i].Type {
 								case PUHealth:
 									Bean.Health += 25
@@ -862,29 +861,83 @@ func main() {
 								case PUFirerate:
 									Gun.ShootDelay -= 0.05
 								case PUDamage:
-									BulletDamage += 10
+									BulletDamageP1 += 10
+								case PUReload:
+									Gun.ReloadTime -= 0.05
+								case PUMag:
+									Gun.Mag += 10
+								case PUImune:
+									Imune = true
 								}
-
 								BeanPowers[i].Active = true
 							}
-
 							BeanPowers[i].LifeTime -= dT
 
 						} else {
-							
 							switch BeanPowers[i].Type {
 							case PUHealth:
 							case PUFirerate:
 								Gun.ShootDelay += 0.05
 							case PUDamage:
-								BulletDamage -= 10
+								BulletDamageP1 -= 10
+							case PUReload:
+								Gun.ReloadDelay += 0.05
+							case PUMag:
+								Gun.Mag -= 10
+							case PUImune:
+								Imune = false
 							}
 
 							Bean.PowersNumber -= 1
 							BeanPowers[i] = BeanPowers[len(BeanPowers)-1]
 							BeanPowers = BeanPowers[:len(BeanPowers)-1]
 						}
-							i++
+						i++
+					}
+				}
+
+				if len(Bean2Powers) != 0 {
+					for i := 0; i < len(Bean2Powers); {
+						if Bean2Powers[i].LifeTime > 0 {
+							if !Bean2Powers[i].Active {
+								switch Bean2Powers[i].Type {
+								case PUHealth:
+									Bean2.Health += 25
+									if Bean2.Health > 100 {
+										Bean2.Health = 100
+									}
+								case PUFirerate:
+									Gun.ShootDelay -= 0.05
+								case PUDamage:
+									BulletDamageP2 += 10
+								case PUReload:
+									Gun2.ReloadTime -= 0.05
+								case PUMag:
+									Gun2.Mag += 10
+								case PUImune:
+									Imune2 = true
+								}
+								Bean2Powers[i].Active = true
+							}
+							Bean2Powers[i].LifeTime -= dT
+						} else {
+							switch Bean2Powers[i].Type {
+							case PUHealth:
+							case PUFirerate:
+								Gun2.ShootDelay += 0.05
+							case PUDamage:
+								BulletDamageP2 -= 10
+							case PUReload:
+								Gun2.Mag -= 10
+							case PUImune:
+								Imune2 = false
+							}
+
+							Bean2.PowersNumber -= 1
+							Bean2Powers[i] = Bean2Powers[len(Bean2Powers)-1]
+							Bean2Powers = Bean2Powers[:len(Bean2Powers)-1]
+						}
+						i++
 					}
 				}
 
@@ -958,9 +1011,14 @@ func main() {
 					rl.DrawTextureEx(PowerUps[PUHealth].Texture, p.Pos, 0.0, 2, rl.White)
 				case PUFirerate:
 					rl.DrawTextureEx(PowerUps[PUFirerate].Texture, p.Pos, 0.0, 2, rl.White)
-					// rl.DrawRectangleV(p.Pos, rl.NewVector2(100, 100), rl.GetColor(0x0000ffff))
 				case PUDamage:
 					rl.DrawTextureEx(PowerUps[PUDamage].Texture, p.Pos, 0.0, 2, rl.White)
+				case PUReload:
+					rl.DrawTextureEx(PowerUps[PUReload].Texture, p.Pos, 0.0, 2, rl.White)
+				case PUMag:
+					rl.DrawTextureEx(PowerUps[PUMag].Texture, p.Pos, 0.0, 2, rl.White)
+				case PUImune:
+					rl.DrawTextureEx(PowerUps[PUImune].Texture, p.Pos, 0.0, 2, rl.White)
 				}
 
 			}
@@ -1017,8 +1075,6 @@ func main() {
 
 			rl.EndMode2D()
 
-			// rl.DrawText(fmt.Sprintf("SpeedX: %0.1f\nSpeedY: %0.1f\nGravity Bean: %0.1f\nGrounded: %v\nCrouched: %v\nGun Angle: %0.1f\nGun2 Angle: %0.1f",Bean.Speed.X, Bean.Speed.Y, Gravity.Bean, Bean.isGrounded, Bean.isCrouched, Gun.Angle, Gun2.Angle), 10, 10, 30, rl.GetColor(0xffffffff))
-
 			// Info Tablet -------------------------------------------------------------------------------------------------------------------------
 
 			// Table P1 ---------------------------------------------------------------------------------------------------------------------
@@ -1033,7 +1089,22 @@ func main() {
 			rl.DrawTextureEx(TextureHeart, rl.NewVector2(10, Screen.Y-390), 0.0, 6, rl.White)
 			rl.DrawText(fmt.Sprintf(": %d", Bean.Lives), 160, int32(Screen.Y)-360, 60, rl.White)
 
-			// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(10, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+			for i := 0; i < len(BeanPowers); {
+				Power = BeanPowers[i].Type
+				switch i {
+				case 0:
+					rl.DrawTextureEx(PowerUps[Power].Texture, rl.NewVector2(10, Screen.Y/2+30), 0.0, 1.5, rl.White)
+					rl.DrawRectanglePro(rl.NewRectangle(15, Screen.Y+105, 62*(BeanPowers[i].LifeTime/PowerUps[Power].Duration) * 100, 25), rl.NewVector2(0, 0), 0.0, rl.GetColor(0x00ff00ff))
+					rl.DrawRectangleLinesEx(rl.NewRectangle(10, Screen.Y/2+100, 67, 20), 5, rl.Black)
+				case 1:
+					rl.DrawTextureEx(PowerUps[Power].Texture, rl.NewVector2(94, Screen.Y/2+30), 0.0, 1.5, rl.White)
+				case 2:
+					rl.DrawTextureEx(PowerUps[Power].Texture, rl.NewVector2(178, Screen.Y/2+30), 0.0, 1.5, rl.White)
+				}
+				i++
+			}
+
+			// rl.DrawTextureEx(PowerUps[0].Texture, rl.NewVector2(10, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
 			// rl.DrawRectangleLinesEx(rl.NewRectangle(10,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
 			// rl.DrawTextureEx(PowerTexture.Health, rl.NewVector2(94, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
 			// rl.DrawRectangleLinesEx(rl.NewRectangle(94,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
@@ -1053,6 +1124,25 @@ func main() {
 
 			rl.DrawTextureEx(TextureHeart, rl.NewVector2(Screen.X-130, Screen.Y-390), 0.0, 6, rl.White)
 			rl.DrawText(fmt.Sprintf("%d :", Bean2.Lives), int32(Screen.X)-230, int32(Screen.Y)-360, 60, rl.White)
+
+			// rl.DrawTextureEx(PowerUps[0].Texture, rl.NewVector2(Screen.X - 78, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+			// rl.DrawRectangleLinesEx(rl.NewRectangle(10,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+			// rl.DrawTextureEx(PowerUps[0].Texture, rl.NewVector2(Screen.X - 68 - 94, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+			// rl.DrawRectangleLinesEx(rl.NewRectangle(94,Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+			// rl.DrawTextureEx(PowerUps[0].Texture, rl.NewVector2(Screen.X - 68 - 178, Screen.Y/2 + 30), 0.0, 1.5, rl.White)
+			// rl.DrawRectangleLinesEx(rl.NewRectangle(178, Screen.Y/2 + 100, 67, 20), 5, rl.Black)
+
+			for i := 0; i < len(Bean2Powers); {
+				Power = Bean2Powers[i].Type
+				if i == 0 {
+					rl.DrawTextureEx(PowerUps[Power].Texture, rl.NewVector2(Screen.X-78, Screen.Y/2+30), 0.0, 1.5, rl.White)
+				} else if i == 1 {
+					rl.DrawTextureEx(PowerUps[Power].Texture, rl.NewVector2(Screen.X-162, Screen.Y/2+30), 0.0, 1.5, rl.White)
+				} else if i == 2 {
+					rl.DrawTextureEx(PowerUps[Power].Texture, rl.NewVector2(Screen.X-246, Screen.Y/2+30), 0.0, 1.5, rl.White)
+				}
+				i++
+			}
 			//-------------------------------------------------------------------------------------------------------------------------------
 
 			//---------------------------------------------------------------------------------------------------------------------------------------
@@ -1214,8 +1304,8 @@ func main() {
 			ScoreP2 += 1
 			Bean = bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean.Lives}
 			Bean2 = bean{Pos: rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean2.Lives}
-			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15, ShootDelay: 0.25}
-			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15, ShootDelay: 0.25}
+			Gun = gun{Player: 1, Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.0, ShootDelay: 0.25, ReloadDelay: 0.0, ReloadTime: 1.5}
+			Gun2 = gun{Player: 2, Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.0, ShootDelay: 0.25, ReloadDelay: 0.0, ReloadTime: 1.5}
 			Bullets = []bullet{}
 			Timer = 0.0
 			Minutes = 0.0
@@ -1225,8 +1315,8 @@ func main() {
 			ScoreP1 += 1
 			Bean = bean{Pos: rl.NewVector2(50, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean.Lives}
 			Bean2 = bean{Pos: rl.NewVector2(5950, 3950), Width: 40, Height: 100, Radius: 20, Speed: rl.NewVector2(0, 0), MaxSpeed: 1000, Acceleration: 500, Drag: 460, Jump: 3000, CurrentPlatformIndex: -1, ignoredPlatformIndex: -1, restingOnPlatform: false, Health: 100.0, Lives: Bean2.Lives}
-			Gun = gun{Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15, ShootDelay: 0.25}
-			Gun2 = gun{Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.15, ShootDelay: 0.25}
+			Gun = gun{Player: 1, Dir: 1, PrevDir: 1, Pos: rl.NewVector2(Bean.Pos.X+25, Bean.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.0, ShootDelay: 0.25, ReloadDelay: 0.0, ReloadTime: 1.5}
+			Gun2 = gun{Player: 2, Dir: -1, PrevDir: 1, Pos: rl.NewVector2(Bean2.Pos.X-25, Bean2.Pos.Y+20), Width: 70, Height: 30, Angle: 0.0, Mag: 15, Shots: 1, CanShoot: true, Delay: 0.0, ShootDelay: 0.25, ReloadDelay: 0.0, ReloadTime: 1.5}
 			Bullets = []bullet{}
 			Timer = 0.0
 			Minutes = 0.0
